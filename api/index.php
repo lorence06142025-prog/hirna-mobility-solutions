@@ -32,10 +32,11 @@ putenv("DB_DATABASE={$dbFile}");
 // Run migration and seed BEFORE processing the HTTP request if DB is fresh
 if ($isNewDb) {
     try {
-        require __DIR__ . '/../vendor/autoload.php';
-        $app = require __DIR__ . '/../bootstrap/app.php';
-        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $setupApp = require __DIR__ . '/../bootstrap/app.php';
+        $setupApp->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
         \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
+        unset($setupApp);
     } catch (\Throwable $e) {
         // Silently pass
     }

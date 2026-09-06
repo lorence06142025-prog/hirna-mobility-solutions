@@ -1,0 +1,229 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="hirna_sprint_burndown_hours" name="Sprint Burndown Chart (Hours)">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Main Card Container -->
+        <mxCell id="card_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0E0E0;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="1020" height="650" as="geometry" />
+        </mxCell>
+
+        <!-- Header Title Banner -->
+        <mxCell id="title_banner" value="HIRNA MOBILITY SOLUTIONS - SPRINT BURNDOWN CHART (DEVELOPMENT HOURS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="70" y="50" width="960" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Legend Box -->
+        <mxCell id="legend_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="115" width="290" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Ideal Guideline Legend item -->
+        <mxCell id="leg_ideal_line" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#9CA3AF;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="735" y="138" as="sourcePoint" />
+            <mxPoint x="775" y="138" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg_ideal_lbl" value="Ideal Burndown Guideline" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="785" y="128" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Actual Hours Legend item -->
+        <mxCell id="leg_actual_line" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="735" y="162" as="sourcePoint" />
+            <mxPoint x="775" y="162" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg_actual_lbl" value="Actual Team Burndown (Hours)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#CE2029;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="785" y="152" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Chart Grid Lines (Y-Axis Horizontal Guides) -->
+        <mxCell id="grid_240" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="210" as="sourcePoint" />
+            <mxPoint x="960" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grid_200" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="265" as="sourcePoint" />
+            <mxPoint x="960" y="265" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grid_160" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="320" as="sourcePoint" />
+            <mxPoint x="960" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grid_120" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="375" as="sourcePoint" />
+            <mxPoint x="960" y="375" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grid_80" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="430" as="sourcePoint" />
+            <mxPoint x="960" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="grid_40" value="" style="endArrow=none;html=1;strokeColor=#E5E7EB;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="485" as="sourcePoint" />
+            <mxPoint x="960" y="485" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Main Y Axis Line -->
+        <mxCell id="y_axis" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#374151;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="540" as="sourcePoint" />
+            <mxPoint x="160" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="y_axis_title" value="REMAINING WORK HOURS (HRS)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#1F2937;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Y Axis Labels (Remaining Hours) -->
+        <mxCell id="lbl_y_240" value="240 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="200" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_200" value="200 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="255" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_160" value="160 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="310" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_120" value="120 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="365" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_80" value="80 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="420" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_40" value="40 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="475" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_y_0" value="0 hrs" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=11;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="530" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Main X Axis Line -->
+        <mxCell id="x_axis" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#374151;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="540" as="sourcePoint" />
+            <mxPoint x="980" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="x_axis_title" value="AGILE SPRINT CYCLES (2-WEEK ITERATIONS)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#1F2937;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="630" width="320" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- X Axis Labels (Sprint Iterations) -->
+        <mxCell id="lbl_sp_0" value="Start&#xa;(Project Kickoff)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="550" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_1" value="Sprint 1&#xa;(Planning &amp; Arch)&#xa;W1-2" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="550" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_2" value="Sprint 2&#xa;(Portal &amp; Fleet Roster)&#xa;W3-4" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_3" value="Sprint 3&#xa;(Leaflet GPS Engine)&#xa;W5-6" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_4" value="Sprint 4&#xa;(AI Fuel &amp; TCAO Cost)&#xa;W7-8" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_5" value="Sprint 5&#xa;(APIs &amp; Eco-Safety)&#xa;W9-10" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="770" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_sp_6" value="Sprint 6&#xa;(QA, Security &amp; Vercel)&#xa;W11-12" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=10;fontColor=#4B5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Ideal Burndown Line (240h -> 0h) -->
+        <mxCell id="ideal_line" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#9CA3AF;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="210" as="sourcePoint" />
+            <mxPoint x="955" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Actual Team Burndown Line Connections -->
+        <!-- Start(240h) -> Sp1(205h) -->
+        <mxCell id="act_line_1" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="210" as="sourcePoint" />
+            <mxPoint x="295" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Sp1(205h) -> Sp2(155h) -->
+        <mxCell id="act_line_2" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="295" y="258" as="sourcePoint" />
+            <mxPoint x="430" y="327" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Sp2(155h) -> Sp3(108h) -->
+        <mxCell id="act_line_3" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="327" as="sourcePoint" />
+            <mxPoint x="565" y="392" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Sp3(108h) -> Sp4(62h) -->
+        <mxCell id="act_line_4" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="565" y="392" as="sourcePoint" />
+            <mxPoint x="700" y="455" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Sp4(62h) -> Sp5(20h) -->
+        <mxCell id="act_line_5" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="700" y="455" as="sourcePoint" />
+            <mxPoint x="835" y="513" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Sp5(20h) -> Sp6(0h) -->
+        <mxCell id="act_line_6" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#CE2029;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="835" y="513" as="sourcePoint" />
+            <mxPoint x="955" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Actual Hour Data Nodes (Pill Markers with Hour Values) -->
+        <mxCell id="node_start" value="240 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="140" y="190" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp1" value="205 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="275" y="238" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp2" value="155 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="410" y="307" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp3" value="108 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="545" y="372" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp4" value="62 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="680" y="435" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp5" value="20 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#CE2029;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="815" y="493" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sp6" value="0 hrs" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#10B981;fontColor=#FFFFFF;fontSize=10;fontStyle=1;strokeColor=#FFFFFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="935" y="520" width="40" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
