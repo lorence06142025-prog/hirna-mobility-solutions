@@ -40,24 +40,13 @@ class RouteController extends Controller
             'start' => 'required|string',
             'end' => 'required|string',
             'vehicle_type' => 'required|string',
+            'fuel_type' => 'nullable|string',
         ]);
 
-        $routeData = $this->routingService->planRoute($validated['start'], $validated['end'], $validated['vehicle_type']);
-        
-        // Add Hirna Vehicle kWh prediction & cost optimization to each route option
-        if (!empty($routeData['routes'])) {
-            foreach ($routeData['routes'] as &$route) {
-                $predictedKwh = $this->fuelPredictionService->predict(
-                    (float) $route['distance_km'],
-                    (float) ($route['distance_km'] / max(0.1, $route['duration_minutes'] / 60)),
-                    $validated['vehicle_type']
-                );
-                
-                $route['predicted_kwh'] = round($predictedKwh, 2);
-                $route['charging_cost_php'] = round($predictedKwh * 11.50, 2);
-            }
-        }
+        $fuelType = $request->get('fuel_type', 'gasoline');
+        $routeData = $this->routingService->planRoute($validated['start'], $validated['end'], $validated['vehicle_type'], $fuelType);
 
         return response()->json($routeData);
     }
 }
+

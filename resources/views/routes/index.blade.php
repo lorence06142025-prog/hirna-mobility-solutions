@@ -297,6 +297,7 @@
         const start = document.getElementById('routeStart').value;
         const end = document.getElementById('routeEnd').value;
         const type = document.getElementById('routeVehicleType').value;
+        const fuelType = document.getElementById('routeFuelType') ? document.getElementById('routeFuelType').value : 'gasoline';
 
         if (!start || !end) return;
         if (start === end) {
@@ -310,7 +311,7 @@
                 "Content-Type": "application/json",
                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ start, end, vehicle_type: type })
+            body: JSON.stringify({ start, end, vehicle_type: type, fuel_type: fuelType })
         })
         .then(res => res.json())
         .then(data => {
@@ -379,6 +380,8 @@
         routes.forEach((r, idx) => {
             const isBest = idx === 0;
             const borderStyle = isBest ? 'border-success bg-success bg-opacity-10' : 'bg-light';
+            const unitLabel = r.fuel_unit || 'Liters (Gas)';
+            const fuelVal = r.estimated_fuel || r.predicted_kwh || 0;
             container.innerHTML += `
                 <div class="card border rounded-3 p-3 mb-3 route-option-card ${borderStyle}" onclick="selectRouteOption(${idx});" style="cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -395,8 +398,8 @@
                             <strong class="text-dark">${r.duration_minutes} mins</strong>
                         </div>
                         <div class="col-4">
-                            <small class="text-muted d-block" style="font-size: 11px;">ESTIMATED ENERGY</small>
-                            <strong class="text-success">${r.predicted_kwh} kWh (₱${r.charging_cost_php})</strong>
+                            <small class="text-muted d-block" style="font-size: 11px;">ESTIMATED CONSUMPTION</small>
+                            <strong class="text-success">${fuelVal} ${unitLabel} (₱${r.charging_cost_php})</strong>
                         </div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
@@ -407,6 +410,7 @@
             `;
         });
     }
+
 
     function exportRoutesToCSV() {
         let csv = [];
