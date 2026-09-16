@@ -177,14 +177,21 @@ class TripController extends Controller
         $latestOdometer = FuelLog::where('vehicle_id', $trip->vehicle_id)->max('odometer_reading');
         $newOdometer = $latestOdometer ? ((float) $latestOdometer + (float) $trip->distance_km) : (12500.00 + (float) $trip->distance_km);
 
+        // Determine vehicle powertrain and correct fuel rate (Gasoline ₱65/L vs EV ₱11.50/kWh)
+        $vehicle = $trip->vehicle;
+        $isEv = $vehicle && (str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast'));
+        $fuelType = $isEv ? 'Electric (kWh)' : 'Gasoline (Liters)';
+        $unitPrice = $isEv ? 11.50 : 65.00;
+        $fuelCost = round($validated['actual_fuel_liters'] * $unitPrice, 2);
+
         // Record fuel log automatically
         FuelLog::create([
             'vehicle_id' => $trip->vehicle_id,
             'trip_id' => $trip->id,
             'amount_liters' => $validated['actual_fuel_liters'],
-            'cost' => $validated['actual_fuel_liters'] * 11.50, // EV kWh rate
+            'cost' => $fuelCost,
             'odometer_reading' => round($newOdometer, 2),
-            'fuel_type' => 'Electric (kWh)',
+            'fuel_type' => $fuelType,
             'date' => now()->toDateString(),
         ]);
 
@@ -197,7 +204,7 @@ class TripController extends Controller
             ]);
         }
 
-        return redirect()->route('trips.index')->with('success', 'Trip completed! Energy logs and driver records updated.');
+        return redirect()->route('trips.index')->with('success', 'Trip completed! Energy/fuel logs and driver records updated.');
     }
 
     /**
@@ -241,17 +248,22 @@ class TripController extends Controller
         ]);
 
         if ($vehicle) {
+            $isEv = str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast');
+            $fuelType = $isEv ? 'Electric (kWh)' : 'Gasoline (Liters)';
+            $unitPrice = $isEv ? 11.50 : 65.00;
+
             $latestOdometer = FuelLog::where('vehicle_id', $vehicle->id)->max('odometer_reading') ?: 12500.00;
             FuelLog::create([
                 'vehicle_id' => $vehicle->id,
                 'trip_id' => $trip->id,
                 'amount_liters' => $validated['actual_fuel_liters'],
-                'cost' => $validated['actual_fuel_liters'] * 11.50,
+                'cost' => round($validated['actual_fuel_liters'] * $unitPrice, 2),
                 'odometer_reading' => round($latestOdometer + $distance, 2),
-                'fuel_type' => 'Electric (kWh)',
+                'fuel_type' => $fuelType,
                 'date' => now()->toDateString(),
             ]);
         }
+
 
         return redirect()->route('trips.index')->with('success', 'Live ride telemetry completed! Dispatch receipt and fuel log saved.');
     }

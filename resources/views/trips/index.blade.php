@@ -198,7 +198,11 @@
                     <select name="vehicle_id" class="form-select rounded-3" required>
                         <option value="" disabled selected>-- Select Vehicle --</option>
                         @foreach($vehicles as $vehicle)
-                            <option value="{{ $vehicle->id }}">{{ $vehicle->license_plate }} - {{ $vehicle->make }} {{ $vehicle->model }} ({{ $vehicle->type }})</option>
+                            @php
+                                $isEv = str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast');
+                                $powertrainLabel = $isEv ? '⚡ Electric EV' : '⛽ Gasoline / Diesel';
+                            @endphp
+                            <option value="{{ $vehicle->id }}">{{ $vehicle->license_plate }} &bull; {{ $vehicle->make }} {{ $vehicle->model }} [{{ $powertrainLabel }}]</option>
                         @endforeach
                     </select>
                 </div>
@@ -227,6 +231,10 @@
             
             <div class="list-group list-group-flush" style="max-height: 520px; overflow-y: auto;">
                 @forelse($trips as $trip)
+                    @php
+                        $tripIsEv = $trip->vehicle && (str_contains(strtolower($trip->vehicle->model . ' ' . $trip->vehicle->make . ' ' . $trip->vehicle->type), 'ev') || str_contains(strtolower($trip->vehicle->model), 'vinfast'));
+                        $fuelUnit = $tripIsEv ? 'kWh (EV)' : 'Liters (Gas)';
+                    @endphp
                     <div class="list-group-item px-0 py-3 border-0 border-bottom">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -235,10 +243,10 @@
                                     {{ $trip->start_location }} <i class="bi bi-arrow-right mx-1 text-primary"></i> {{ $trip->end_location }}
                                 </h6>
                                 <p class="mb-0 text-muted" style="font-size: 13px;">
-                                    Distance: <strong>{{ $trip->distance_km }} km</strong> | Est. Fuel: <strong class="text-success">{{ $trip->estimated_fuel_liters }} kWh</strong>
+                                    Distance: <strong>{{ $trip->distance_km }} km</strong> | Est. Fuel/Energy: <strong class="text-success">{{ $trip->estimated_fuel_liters }} {{ $fuelUnit }}</strong>
                                 </p>
                                 <p class="mb-0 text-muted" style="font-size: 12px;">
-                                    Vehicle: {{ $trip->vehicle ? $trip->vehicle->license_plate . ' (' . $trip->vehicle->type . ')' : 'None' }} | Driver: {{ $trip->driver->user->name ?? 'None' }}
+                                    Vehicle: {{ $trip->vehicle ? $trip->vehicle->license_plate . ' (' . $trip->vehicle->make . ' ' . $trip->vehicle->model . ' - ' . ($tripIsEv ? '⚡ EV' : '⛽ Gas') . ')' : 'None' }} | Driver: {{ $trip->driver->user->name ?? 'None' }}
                                 </p>
                             </div>
 
@@ -258,13 +266,14 @@
                                     <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
                                         <i class="bi bi-check-circle-fill me-1"></i> Completed
                                     </span>
-                                    <small class="d-block text-muted text-end mt-1" style="font-size: 11px;">Final: {{ $trip->actual_fuel_liters }} kWh</small>
+                                    <small class="d-block text-muted text-end mt-1" style="font-size: 11px;">Final: {{ $trip->actual_fuel_liters }} {{ $fuelUnit }}</small>
                                 @else
                                     <span class="badge bg-secondary rounded-pill">{{ ucfirst($trip->status) }}</span>
                                 @endif
                             </div>
                         </div>
                     </div>
+
                 @empty
                     <div class="text-center py-5">
                         <i class="bi bi-geo-alt-fill text-muted fs-1 mb-2"></i>

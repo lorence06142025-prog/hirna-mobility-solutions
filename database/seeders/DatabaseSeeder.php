@@ -210,16 +210,21 @@ class DatabaseSeeder extends Seeder
                 'end_time' => now()->subDays(20 - $i),
             ]);
 
-            // Add corresponding FuelLog
+            // Add corresponding FuelLog based on vehicle powertrain
+            $isEv = str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast');
+            $fuelType = $isEv ? 'Electric (kWh)' : 'Gasoline (Liters)';
+            $unitPrice = $isEv ? 11.50 : 65.00;
+
             FuelLog::create([
                 'vehicle_id' => $vehicle->id,
                 'trip_id' => $trip->id,
                 'date' => $trip->end_time->format('Y-m-d'),
                 'amount_liters' => $actualLiters,
-                'cost' => round($actualLiters * 11.50, 2), // PHP 11.50 per kWh EV charging rate
+                'cost' => round($actualLiters * $unitPrice, 2),
                 'odometer_reading' => 5000 + ($i * 120) + $distance,
-                'fuel_type' => 'Electric (kWh)',
+                'fuel_type' => $fuelType,
             ]);
+
 
             // Add Performance Log
             $speeding = (mt_rand(0, 100) > 85) ? mt_rand(1, 3) : 0;
