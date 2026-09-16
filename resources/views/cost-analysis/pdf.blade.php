@@ -56,6 +56,7 @@
             <tr>
                 <th>License Plate</th>
                 <th>Model</th>
+                <th>Fuel / Energy Source</th>
                 <th>Distance (KM)</th>
                 <th>Fuel Expense</th>
                 <th>Maintenance Expense</th>
@@ -68,14 +69,18 @@
             <tr>
                 <td><strong>{{ $veh['license_plate'] }}</strong></td>
                 <td>{{ $veh['model'] }}</td>
+                <td>
+                    <strong>{{ $veh['fuel_type'] }}</strong>
+                </td>
                 <td>{{ $veh['distance_km'] }} km</td>
                 <td>PHP {{ number_format($veh['fuel_cost'], 2) }}</td>
                 <td>PHP {{ number_format($veh['maintenance_cost'], 2) }}</td>
                 <td>PHP {{ number_format($veh['total_cost'], 2) }}</td>
-                <td><strong>PHP {{ $veh['cost_per_km'] }}</strong></td>
+                <td><strong>PHP {{ $veh['cost_per_km'] }} / km</strong></td>
             </tr>
             @endforeach
         </tbody>
+
     </table>
 
     <div class="footer">

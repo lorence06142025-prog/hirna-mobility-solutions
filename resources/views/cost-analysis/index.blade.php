@@ -138,8 +138,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>Vehicle</th>
+                            <th>Fuel / Energy Source</th>
                             <th>Distance</th>
-                            <th>Fuel Cost</th>
+                            <th>Fuel Expense</th>
                             <th>Maint. Cost</th>
                             <th>Cost / KM</th>
                             <th>Efficiency</th>
@@ -152,11 +153,22 @@
                                 <strong class="d-block text-dark">{{ $veh['license_plate'] }}</strong>
                                 <small class="text-muted">{{ $veh['model'] }}</small>
                             </td>
+                            <td>
+                                @if(str_contains(strtolower($veh['fuel_type']), 'electric') || str_contains(strtolower($veh['fuel_type']), 'kwh') || str_contains(strtolower($veh['fuel_type']), 'ev'))
+                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1 fw-bold">
+                                        <i class="bi bi-lightning-charge-fill me-1"></i> Electric (kWh)
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-dark border border-secondary border-opacity-25 px-2 py-1 fw-bold">
+                                        <i class="bi bi-fuel-pump-fill me-1"></i> Gasoline / Diesel
+                                    </span>
+                                @endif
+                            </td>
                             <td>{{ $veh['distance_km'] }} km</td>
                             <td>₱{{ number_format($veh['fuel_cost'], 2) }}</td>
                             <td>₱{{ number_format($veh['maintenance_cost'], 2) }}</td>
                             <td>
-                                <strong class="text-dark">₱{{ $veh['cost_per_km'] }}</strong>
+                                <strong class="text-dark">₱{{ $veh['cost_per_km'] }}</strong> / km
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
@@ -170,6 +182,7 @@
                         </tr>
                         @endforeach
                     </tbody>
+
                 </table>
             </div>
         </div>

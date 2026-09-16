@@ -45,11 +45,15 @@ class CostAnalysisController extends Controller
             $maintCost = (float) MaintenanceRecord::where('vehicle_id', $vehicle->id)->sum('cost');
             $totalCost = $fuelCost + $maintCost;
 
+            $logFuelType = FuelLog::where('vehicle_id', $vehicle->id)->value('fuel_type');
+            $fuelType = $logFuelType ?: (str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast') ? 'Electric (kWh)' : 'Gasoline (Liters)');
+
             return [
                 'id' => $vehicle->id,
                 'license_plate' => $vehicle->license_plate,
                 'model' => $vehicle->make . ' ' . $vehicle->model,
                 'type' => $vehicle->type,
+                'fuel_type' => $fuelType,
                 'trips_completed' => $vehicle->trips_count,
                 'distance_km' => round($distance, 1),
                 'fuel_cost' => round($fuelCost, 2),
@@ -125,7 +129,7 @@ class CostAnalysisController extends Controller
      */
     public function exportCsv(Request $request)
     {
-        $fileName = 'TCAO_Cost_Analysis_' . date('Y-m-d_His') . '.csv';
+        $fileName = 'Hirna_TCAO_Cost_Analysis_' . date('Y-m-d_His') . '.csv';
 
         $vehicles = Vehicle::withCount(['trips' => function($q) {
             $q->where('status', 'completed');
@@ -136,10 +140,14 @@ class CostAnalysisController extends Controller
             $maintCost = (float) MaintenanceRecord::where('vehicle_id', $vehicle->id)->sum('cost');
             $totalCost = $fuelCost + $maintCost;
 
+            $logFuelType = FuelLog::where('vehicle_id', $vehicle->id)->value('fuel_type');
+            $fuelType = $logFuelType ?: (str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast') ? 'Electric (kWh)' : 'Gasoline (Liters)');
+
             return [
                 'license_plate' => $vehicle->license_plate,
                 'model' => $vehicle->make . ' ' . $vehicle->model,
                 'type' => $vehicle->type,
+                'fuel_type' => $fuelType,
                 'trips_completed' => $vehicle->trips_count,
                 'distance_km' => round($distance, 1),
                 'fuel_cost' => round($fuelCost, 2),
@@ -158,7 +166,7 @@ class CostAnalysisController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['License Plate', 'Model', 'Vehicle Type', 'Trips Completed', 'Distance (km)', 'Fuel Cost (PHP)', 'Maintenance Cost (PHP)', 'Total Cost (PHP)', 'Cost per KM (PHP)', 'Efficiency Score (%)'];
+        $columns = ['License Plate', 'Model', 'Vehicle Type', 'Fuel / Energy Source', 'Trips Completed', 'Distance (km)', 'Fuel Cost (PHP)', 'Maintenance Cost (PHP)', 'Total Cost (PHP)', 'Cost per KM (PHP)', 'Efficiency Score (%)'];
 
         $callback = function() use($vehicles, $columns) {
             $file = fopen('php://output', 'w');
@@ -169,6 +177,7 @@ class CostAnalysisController extends Controller
                     $row['license_plate'],
                     $row['model'],
                     $row['type'],
+                    $row['fuel_type'],
                     $row['trips_completed'],
                     $row['distance_km'],
                     $row['fuel_cost'],
@@ -206,9 +215,13 @@ class CostAnalysisController extends Controller
             $maintCost = (float) MaintenanceRecord::where('vehicle_id', $vehicle->id)->sum('cost');
             $totalCost = $fuelCost + $maintCost;
 
+            $logFuelType = FuelLog::where('vehicle_id', $vehicle->id)->value('fuel_type');
+            $fuelType = $logFuelType ?: (str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast') ? 'Electric (kWh)' : 'Gasoline (Liters)');
+
             return [
                 'license_plate' => $vehicle->license_plate,
                 'model' => $vehicle->make . ' ' . $vehicle->model,
+                'fuel_type' => $fuelType,
                 'distance_km' => round($distance, 1),
                 'fuel_cost' => round($fuelCost, 2),
                 'maintenance_cost' => round($maintCost, 2),
@@ -222,5 +235,6 @@ class CostAnalysisController extends Controller
             'costPerKm', 'fuelCostPerKm', 'maintCostPerKm', 'vehicles'
         ));
     }
+
 }
 
