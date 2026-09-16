@@ -16,10 +16,11 @@
         <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
             <i class="bi bi-printer me-1"></i> Print / PDF
         <button class="btn btn-premium d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#logFuelModal">
-            <i class="bi bi-plus-circle me-1"></i> Log EV Charging (kWh)
+            <i class="bi bi-plus-circle me-1"></i> Log Refuel / EV Charging
         </button>
     </div>
 </div>
+
 
 <!-- Inter-System Integration Connections Badge Banner -->
 <div class="alert alert-dark bg-dark text-white border-0 rounded-4 p-3 mb-4 shadow-sm">
@@ -306,19 +307,22 @@
                             </div>
                         </td>
                         <td class="fw-bold text-dark" style="font-size: 14px;">
-                            @if(str_contains(strtolower($log->fuel_type ?? ''), 'gas'))
-                                <span class="text-danger"><i class="bi bi-fuel-pump me-1"></i> {{ number_format($log->amount_liters, 2) }} Liters (Gas)</span>
-                            @elseif(str_contains(strtolower($log->fuel_type ?? ''), 'diesel'))
+                            @php
+                                $isEvLog = str_contains(strtolower($log->fuel_type ?? ''), 'electric') || str_contains(strtolower($log->fuel_type ?? ''), 'kwh') || str_contains(strtolower($log->vehicle->model ?? ''), 'vinfast') || str_contains(strtolower($log->vehicle->type ?? ''), 'ev');
+                            @endphp
+                            @if(str_contains(strtolower($log->fuel_type ?? ''), 'diesel'))
                                 <span class="text-warning"><i class="bi bi-fuel-pump-fill me-1"></i> {{ number_format($log->amount_liters, 2) }} Liters (Diesel)</span>
-                            @else
+                            @elseif($isEvLog)
                                 <span class="text-success"><i class="bi bi-lightning-charge me-1"></i> {{ number_format($log->amount_liters, 2) }} kWh (EV)</span>
+                            @else
+                                <span class="text-danger"><i class="bi bi-fuel-pump me-1"></i> {{ number_format($log->amount_liters, 2) }} Liters (Gas)</span>
                             @endif
                         </td>
                         <td class="fw-bold text-dark" style="font-size: 14px;">₱{{ number_format($log->cost, 2) }}</td>
                         <td style="font-size: 13px;">{{ number_format($log->odometer_reading, 1) }} km</td>
                         <td>
                             <span class="badge bg-dark text-white px-3 py-2 rounded-3 shadow-sm fw-bold">
-                                {{ $log->fuel_type ?: 'Gasoline Refueling (Hirna Station)' }}
+                                {{ $log->fuel_type ?: ($isEvLog ? 'Electric Charging (Hirna Depot)' : 'Gasoline Refueling (Hirna Station)') }}
                             </span>
                         </td>
                     </tr>
@@ -360,7 +364,11 @@
                         <select name="vehicle_id" class="form-select rounded-3" required>
                             <option value="" disabled selected>-- Select Vehicle --</option>
                             @foreach($vehicles as $vehicle)
-                                <option value="{{ $vehicle->id }}">{{ $vehicle->make }} {{ $vehicle->model }} ({{ $vehicle->license_plate }})</option>
+                                @php
+                                    $isEv = str_contains(strtolower($vehicle->model . ' ' . $vehicle->make . ' ' . $vehicle->type), 'ev') || str_contains(strtolower($vehicle->model), 'vinfast');
+                                    $powertrainLabel = $isEv ? '⚡ Electric EV' : '⛽ Gasoline / Diesel';
+                                @endphp
+                                <option value="{{ $vehicle->id }}">{{ $vehicle->license_plate }} &bull; {{ $vehicle->make }} {{ $vehicle->model }} [{{ $powertrainLabel }}]</option>
                             @endforeach
                         </select>
                     </div>
@@ -400,11 +408,12 @@
                         <select name="fuel_type" class="form-select rounded-3" required>
                             <option value="Gasoline Refueling" selected>⛽ Gasoline Refueling (Hirna Station)</option>
                             <option value="Diesel Refueling">🛢️ Diesel Refueling (Hirna Station)</option>
-                            <option value="Fast DC EV Charging">⚡ Fast DC EV Charging (Hirna Depot)</option>
+                            <option value="Electric (kWh)">⚡ Fast DC EV Charging (Hirna Depot)</option>
                             <option value="AC Level 2 Depot Charging">🔌 AC Level 2 Depot Charging</option>
                         </select>
                     </div>
                 </div>
+
                 <div class="modal-footer border-0 p-3 bg-light">
                     <button type="submit" class="btn btn-success w-100 rounded-3">
                         <i class="bi bi-save me-1"></i> Save Charging Record
