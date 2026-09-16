@@ -12,8 +12,12 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
+        // Unauthenticated access to protected '/' route correctly redirects to '/login' (302)
         $response = $this->get('/');
+        $response->assertStatus(302);
 
-        $response->assertStatus(200);
+        // Public '/login' page returns 200 OK
+        $loginResponse = $this->get('/login');
+        $loginResponse->assertStatus(200);
     }
 }
