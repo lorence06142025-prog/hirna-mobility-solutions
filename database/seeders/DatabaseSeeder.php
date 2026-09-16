@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create Core Users
+        // 1. Create Core Role Users
         $admin = User::create([
             'name' => 'Hirna System Admin',
             'email' => 'admin@hirna.ph',
@@ -24,11 +24,32 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        $fleetManager = User::create([
+            'name' => 'Alex Fleet Manager',
+            'email' => 'fleetmanager@hirna.ph',
+            'password' => Hash::make('Password@123'),
+            'role' => 'fleet_manager',
+        ]);
+
         $dispatcher = User::create([
-            'name' => 'John Dispatcher',
+            'name' => 'Sarah Dispatcher',
             'email' => 'dispatcher@hirna.ph',
             'password' => Hash::make('Password@123'),
             'role' => 'dispatcher',
+        ]);
+
+        $finance = User::create([
+            'name' => 'Marcus Finance Officer',
+            'email' => 'finance@hirna.ph',
+            'password' => Hash::make('Password@123'),
+            'role' => 'finance',
+        ]);
+
+        $operations = User::create([
+            'name' => 'Elena Operations Manager',
+            'email' => 'operations@hirna.ph',
+            'password' => Hash::make('Password@123'),
+            'role' => 'operations',
         ]);
 
         $driverNames = ['Juan Dela Cruz', 'Maria Santos', 'Jose Rizal', 'Pedro Penduko', 'Andres Bonifacio'];
