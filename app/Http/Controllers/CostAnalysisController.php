@@ -119,4 +119,108 @@ class CostAnalysisController extends Controller
             'vehicles', 'drivers', 'optimizationInsights', 'timeframe'
         ));
     }
+
+    /**
+     * Export TCAO Fleet Cost Analysis report as CSV download
+     */
+    public function exportCsv(Request $request)
+    {
+        $fileName = 'TCAO_Cost_Analysis_' . date('Y-m-d_His') . '.csv';
+
+        $vehicles = Vehicle::withCount(['trips' => function($q) {
+            $q->where('status', 'completed');
+        }])->get()->map(function ($vehicle) {
+            $trips = Trip::where('vehicle_id', $vehicle->id)->where('status', 'completed');
+            $distance = (float) $trips->sum('distance_km');
+            $fuelCost = (float) FuelLog::where('vehicle_id', $vehicle->id)->sum('cost');
+            $maintCost = (float) MaintenanceRecord::where('vehicle_id', $vehicle->id)->sum('cost');
+            $totalCost = $fuelCost + $maintCost;
+
+            return [
+                'license_plate' => $vehicle->license_plate,
+                'model' => $vehicle->make . ' ' . $vehicle->model,
+                'type' => $vehicle->type,
+                'trips_completed' => $vehicle->trips_count,
+                'distance_km' => round($distance, 1),
+                'fuel_cost' => round($fuelCost, 2),
+                'maintenance_cost' => round($maintCost, 2),
+                'total_cost' => round($totalCost, 2),
+                'cost_per_km' => $distance > 0 ? round($totalCost / $distance, 2) : 0,
+                'efficiency_score' => $distance > 0 ? max(50, min(100, round(100 - (($totalCost / $distance) * 2), 1))) : 85,
+            ];
+        });
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['License Plate', 'Model', 'Vehicle Type', 'Trips Completed', 'Distance (km)', 'Fuel Cost (PHP)', 'Maintenance Cost (PHP)', 'Total Cost (PHP)', 'Cost per KM (PHP)', 'Efficiency Score (%)'];
+
+        $callback = function() use($vehicles, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($vehicles as $row) {
+                fputcsv($file, [
+                    $row['license_plate'],
+                    $row['model'],
+                    $row['type'],
+                    $row['trips_completed'],
+                    $row['distance_km'],
+                    $row['fuel_cost'],
+                    $row['maintenance_cost'],
+                    $row['total_cost'],
+                    $row['cost_per_km'],
+                    $row['efficiency_score'] . '%'
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Render printable PDF view for TCAO report
+     */
+    public function exportPdf(Request $request)
+    {
+        $totalDistance = (float) Trip::where('status', 'completed')->sum('distance_km');
+        $totalFuelCost = (float) FuelLog::sum('cost');
+        $totalMaintenanceCost = (float) MaintenanceRecord::sum('cost');
+        $totalOperationalCost = $totalFuelCost + $totalMaintenanceCost;
+
+        $costPerKm = number_format($totalDistance > 0 ? ($totalOperationalCost / $totalDistance) : 0, 2);
+        $fuelCostPerKm = number_format($totalDistance > 0 ? ($totalFuelCost / $totalDistance) : 0, 2);
+        $maintCostPerKm = number_format($totalDistance > 0 ? ($totalMaintenanceCost / $totalDistance) : 0, 2);
+
+        $vehicles = Vehicle::all()->map(function ($vehicle) {
+            $trips = Trip::where('vehicle_id', $vehicle->id)->where('status', 'completed');
+            $distance = (float) $trips->sum('distance_km');
+            $fuelCost = (float) FuelLog::where('vehicle_id', $vehicle->id)->sum('cost');
+            $maintCost = (float) MaintenanceRecord::where('vehicle_id', $vehicle->id)->sum('cost');
+            $totalCost = $fuelCost + $maintCost;
+
+            return [
+                'license_plate' => $vehicle->license_plate,
+                'model' => $vehicle->make . ' ' . $vehicle->model,
+                'distance_km' => round($distance, 1),
+                'fuel_cost' => round($fuelCost, 2),
+                'maintenance_cost' => round($maintCost, 2),
+                'total_cost' => round($totalCost, 2),
+                'cost_per_km' => $distance > 0 ? round($totalCost / $distance, 2) : 0,
+            ];
+        });
+
+        return view('cost-analysis.pdf', compact(
+            'totalDistance', 'totalFuelCost', 'totalMaintenanceCost', 'totalOperationalCost',
+            'costPerKm', 'fuelCostPerKm', 'maintCostPerKm', 'vehicles'
+        ));
+    }
 }
+

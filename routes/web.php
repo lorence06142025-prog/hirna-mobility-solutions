@@ -61,6 +61,8 @@ Route::middleware(['role'])->group(function () {
 
     // Transport Cost Analysis & Optimization (TCAO)
     Route::get('/cost-analysis', [CostAnalysisController::class, 'index'])->name('cost-analysis.index');
+    Route::get('/cost-analysis/export-csv', [CostAnalysisController::class, 'exportCsv'])->name('cost-analysis.export-csv');
+    Route::get('/cost-analysis/export-pdf', [CostAnalysisController::class, 'exportPdf'])->name('cost-analysis.export-pdf');
 
     // Maintenance Management
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');

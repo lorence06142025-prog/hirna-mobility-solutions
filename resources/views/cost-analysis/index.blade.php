@@ -7,15 +7,15 @@
         <p class="page-header-subtitle">Analyze fleet operational costs per kilometer, driver cost efficiency, and AI savings recommendations.</p>
     </div>
     <div class="col-auto d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-success rounded-3" onclick="exportTcaoToCSV();">
+        <a href="{{ route('cost-analysis.export-csv') }}" class="btn btn-outline-success rounded-3">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-        </button>
+        </a>
         <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importTcaoCsvModal">
             <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
         </button>
-        <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
+        <a href="{{ route('cost-analysis.export-pdf') }}" target="_blank" class="btn btn-outline-dark rounded-3">
             <i class="bi bi-printer me-1"></i> Print / PDF
-        </button>
+        </a>
         <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill"><i class="bi bi-cpu me-1"></i> AI Optimization Active</span>
     </div>
 </div>
