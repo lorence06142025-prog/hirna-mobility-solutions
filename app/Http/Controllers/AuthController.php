@@ -56,12 +56,8 @@ class AuthController extends Controller
         $throttleKey = Str::transliterate($email . '|' . $request->ip());
         $maxAttempts = 3; // Strict 3 Failed Attempts Lockout Threshold
 
-        // 3. Check if target account is Superadmin (Superadmins have lockout immunity)
-        $user = User::where('email', $email)->first();
-        $isAdminAccount = ($email === 'admin@hirna.ph') || ($user && ($user->role === 'admin'));
-
-        // 4. Check Rate Limiter Lockout (Max 3 Attempts for non-admin accounts)
-        if (!$isAdminAccount && RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
+        // 3. Check Rate Limiter Lockout (Max 3 Attempts for all accounts)
+        if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             
             SecurityLog::create([
@@ -74,50 +70,25 @@ class AuthController extends Controller
             
             Log::warning("SECURITY LOCKOUT: IP {$request->ip()} locked out on {$email}");
             
-            return back()->with('error', "🚨 Security Lockout: Too many failed login attempts (3/3). Your account has been temporarily locked for {$seconds} seconds. You can wait or request a Superadmin unlock at /admin/security.");
+            return back()->with('error', "🚨 Security Lockout: Too many failed login attempts (3/3). Your account has been temporarily locked for {$seconds} seconds.");
         }
 
-        // 5. Authenticate Against Database User Records
-        $authenticated = false;
-        $userName = '';
-        $userRole = 'admin';
-        $userId = 1;
+        // 4. Authenticate Against Database User Records Strictly
+        $user = User::where('email', $email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            $authenticated = true;
-            $userName = $user->name;
-            $userRole = $user->role ?: 'admin';
-            $userId = $user->id;
-        } else {
-            // Fallback for demo role accounts
-            $roleMap = [
-                'admin@hirna.ph' => ['name' => 'Hirna System Admin', 'role' => 'admin'],
-                'fleetmanager@hirna.ph' => ['name' => 'Alex Fleet Manager', 'role' => 'fleet_manager'],
-                'dispatcher@hirna.ph' => ['name' => 'Sarah Dispatcher', 'role' => 'dispatcher'],
-                'finance@hirna.ph' => ['name' => 'Marcus Finance Officer', 'role' => 'finance'],
-                'operations@hirna.ph' => ['name' => 'Elena Operations Manager', 'role' => 'operations'],
-            ];
-
-            if (isset($roleMap[$email]) && $request->password === 'Password@123') {
-                $authenticated = true;
-                $userName = $roleMap[$email]['name'];
-                $userRole = $roleMap[$email]['role'];
-                $userId = 1;
-            }
-        }
-
-        // 6. Successful Authentication
-        if ($authenticated) {
             // Clear brute-force rate limiter on success
             RateLimiter::clear($throttleKey);
 
             // Session Fixation Defense: Regenerate session ID
             $request->session()->regenerate();
 
+            $userRole = $user->role ?: 'admin';
+
             session([
-                'user_id' => $userId,
-                'user_name' => $userName,
-                'user_email' => $email,
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
                 'user_role' => $userRole,
             ]);
 
@@ -132,13 +103,11 @@ class AuthController extends Controller
             Log::info("SECURITY AUDIT: Successful login for {$email} ({$userRole}) from IP {$request->ip()}");
 
             $roleTitle = ucwords(str_replace('_', ' ', $userRole));
-            return redirect()->route('dashboard')->with('success', "Signed in as {$userName} ({$roleTitle}).");
+            return redirect()->route('dashboard')->with('success', "Signed in as {$user->name} ({$roleTitle}).");
         }
 
-        // 7. Failed Login Attempt: Record Strike in RateLimiter (Excluding Superadmins)
-        if (!$isAdminAccount) {
-            RateLimiter::hit($throttleKey, 60); // 60-second decay timer
-        }
+        // 5. Failed Login Attempt: Record Strike in RateLimiter
+        RateLimiter::hit($throttleKey, 60); // 60-second decay timer
         $attemptsLeft = RateLimiter::remaining($throttleKey, $maxAttempts);
 
         SecurityLog::create([
@@ -157,6 +126,7 @@ class AuthController extends Controller
 
         return back()->with('error', "Invalid password or email address. You have {$attemptsLeft} attempt(s) remaining before temporary lockout.");
     }
+
 
     /**
      * Switch active role live during demo.

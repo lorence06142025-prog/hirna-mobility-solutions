@@ -33,7 +33,12 @@ class CheckRole
             return $next($request);
         }
 
-        // Smooth fallthrough for active internal staff session to prevent random error popups
-        return $next($request);
+        // Reject unauthorized roles with strict 403 Forbidden response
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['error' => 'Unauthorized role access.'], 403);
+        }
+
+        abort(403, 'Unauthorized access for your assigned account role.');
     }
 }
+
