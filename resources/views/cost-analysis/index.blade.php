@@ -7,14 +7,20 @@
         <p class="page-header-subtitle">Analyze fleet operational costs per kilometer, driver cost efficiency, and AI savings recommendations.</p>
     </div>
     <div class="col-auto d-flex gap-2 flex-wrap">
-        <a href="{{ route('cost-analysis.export-csv') }}" class="btn btn-outline-success rounded-3">
+        <div class="input-group" style="max-width: 280px;">
+            <input type="text" id="tcaoSearchInput" class="form-control rounded-start-3 border-secondary-subtle" placeholder="Search plate, driver..." onkeyup="filterTcaoTables()" oninput="filterTcaoTables()">
+            <button class="btn btn-danger rounded-end-3 fw-bold" type="button" onclick="filterTcaoTables()" style="background: #CE2029 !important;">
+                <i class="bi bi-search me-1"></i> Search
+            </button>
+        </div>
+        <a href="{{ route('cost-analysis.export-csv') }}" class="btn btn-outline-success rounded-3 fw-bold shadow-sm">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
         </a>
-        <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importTcaoCsvModal">
+        <button class="btn btn-outline-primary rounded-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#importTcaoCsvModal">
             <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
         </button>
-        <a href="{{ route('cost-analysis.export-pdf') }}" target="_blank" class="btn btn-outline-dark rounded-3">
-            <i class="bi bi-printer me-1"></i> Print / PDF
+        <a href="{{ route('cost-analysis.export-pdf') }}" target="_blank" class="btn btn-outline-dark rounded-3 fw-bold shadow-sm">
+            <i class="bi bi-printer me-1"></i> Export PDF
         </a>
         <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill"><i class="bi bi-cpu me-1"></i> AI Optimization Active</span>
     </div>
@@ -134,7 +140,7 @@
         <div class="card premium-card border-0 p-4">
             <h5 class="fw-bold mb-3"><i class="bi bi-truck me-2 text-primary"></i> Vehicle Cost-per-KM Breakdown</h5>
             <div class="table-responsive">
-                <table class="table align-middle table-hover">
+                <table class="table align-middle table-hover" id="tcaoVehiclesTable">
                     <thead class="table-light">
                         <tr>
                             <th>Vehicle</th>
@@ -193,7 +199,7 @@
         <div class="card premium-card border-0 p-4">
             <h5 class="fw-bold mb-3"><i class="bi bi-person-badge me-2 text-primary"></i> Driver Fuel Cost Efficiency</h5>
             <div class="table-responsive">
-                <table class="table align-middle table-hover">
+                <table class="table align-middle table-hover" id="tcaoDriversTable">
                     <thead class="table-light">
                         <tr>
                             <th>Driver</th>
@@ -227,32 +233,6 @@
             </div>
         </div>
     </div>
-</div>
-@endsection
-
-@section('scripts')
-<script>
-function exportTcaoToCSV() {
-    let csv = [];
-    const rows = document.querySelectorAll("table tr");
-    for (let i = 0; i < rows.length; i++) {
-        let row = [], cols = rows[i].querySelectorAll("td, th");
-        for (let j = 0; j < cols.length; j++) 
-            row.push('"' + cols[j].innerText.replace(/"/g, '""').trim() + '"');
-        csv.push(row.join(","));
-    }
-
-    const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
-    const downloadLink = document.createElement("a");
-    downloadLink.download = "Hirna_Transport_Cost_Analysis_TCAO.csv";
-    downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-}
-</script>
-
 <!-- Import TCAO CSV Modal -->
 <div class="modal fade" id="importTcaoCsvModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog rounded-4 overflow-hidden">
@@ -280,3 +260,59 @@ function exportTcaoToCSV() {
     </div>
 </div>
 @endsection
+
+@section('scripts')
+<script>
+function filterTcaoTables() {
+    const inputEl = document.getElementById('tcaoSearchInput');
+    if (!inputEl) return;
+    const input = inputEl.value.toLowerCase().trim();
+
+    // Query both tables
+    const vehicleRows = document.querySelectorAll('#tcaoVehiclesTable tbody tr');
+    const driverRows = document.querySelectorAll('#tcaoDriversTable tbody tr');
+
+    vehicleRows.forEach(row => {
+        const text = (row.textContent || row.innerText || '').toLowerCase();
+        row.style.display = (!input || text.includes(input)) ? '' : 'none';
+    });
+
+    driverRows.forEach(row => {
+        const text = (row.textContent || row.innerText || '').toLowerCase();
+        row.style.display = (!input || text.includes(input)) ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('tcaoSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterTcaoTables();
+            }
+        });
+        searchInput.addEventListener('input', filterTcaoTables);
+    }
+});
+
+function exportTcaoToCSV() {
+    let csv = [];
+    const rows = document.querySelectorAll("table tr");
+    for (let i = 0; i < rows.length; i++) {
+        let row = [], cols = rows[i].querySelectorAll("td, th");
+        for (let j = 0; j < cols.length; j++) 
+            row.push('"' + cols[j].innerText.replace(/"/g, '""').trim() + '"');
+        csv.push(row.join(","));
+    }
+
+    const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+    const downloadLink = document.createElement("a");
+    downloadLink.download = "Hirna_Transport_Cost_Analysis_TCAO.csv";
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+</script>

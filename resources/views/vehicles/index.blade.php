@@ -6,16 +6,33 @@
         <h2 class="page-header-title">Fleet and Vehicle Management</h2>
         <p class="page-header-subtitle">Manage Hirna Mobility Fleet vehicle inventory, battery storage, and active fleet statuses.</p>
     </div>
-    <div class="col-auto d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-success rounded-3" onclick="exportVehiclesToCSV();">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    <div class="col-auto d-flex gap-2 flex-wrap align-items-center">
+        <!-- Search Bar -->
+        <div class="input-group" style="max-width: 250px;">
+            <input type="text" id="vehicleSearchInput" class="form-control rounded-start-3 border-secondary-subtle" placeholder="Search plate, model..." onkeyup="filterVehiclesTable()">
+            <button class="btn btn-danger rounded-end-3 fw-bold" type="button" onclick="filterVehiclesTable()" style="background: #CE2029 !important;">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+
+        <!-- Filter Dropdown (Refine by Vehicle/Fuel Type) -->
+        <select id="vehicleTypeFilter" class="form-select rounded-3 border-secondary-subtle" style="width: 170px;" onchange="filterVehiclesTable()">
+            <option value="">All Vehicle Types</option>
+            <option value="taxi">Taxi Sedan</option>
+            <option value="mpv">MPV / SUV</option>
+            <option value="van">Shuttle Van</option>
+            <option value="electric">Electric (EV)</option>
+            <option value="traysikel">Hirna Traysikel</option>
+        </select>
+
+        <!-- Section-Level Export Options -->
+        <button class="btn btn-outline-success rounded-3 fw-bold shadow-sm" onclick="exportVehiclesToCSV();">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
         </button>
-        <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importVehiclesCsvModal">
-            <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
+        <button class="btn btn-outline-dark rounded-3 fw-bold shadow-sm" onclick="window.print();">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
         </button>
-        <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
-            <i class="bi bi-printer me-1"></i> Print / PDF
-        </button>
+
         <button class="btn btn-premium d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
             <i class="bi bi-plus-circle me-1"></i> Register Hirna Vehicle
         </button>
@@ -405,25 +422,37 @@
 
 @section('scripts')
 <script>
+function filterVehiclesTable() {
+    const input = document.getElementById('vehicleSearchInput').value.toLowerCase();
+    const filter = document.getElementById('vehicleTypeFilter') ? document.getElementById('vehicleTypeFilter').value.toLowerCase() : '';
+    const rows = document.querySelectorAll('#vehicles-pane tbody tr, #pms-pane tbody tr, #battery-pane tbody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const matchesSearch = text.includes(input);
+        const matchesFilter = filter === '' || text.includes(filter);
+        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    });
+}
+
 function exportVehiclesToCSV() {
     let csv = [];
-    const rows = document.querySelectorAll("#vehiclesTable tr");
-    
-    for (let i = 0; i < rows.length; i++) {
-        let row = [], cols = rows[i].querySelectorAll("td, th");
-        for (let j = 0; j < cols.length - 1; j++) // exclude ACTIONS column
-            row.push('"' + cols[j].innerText.replace(/"/g, '""').trim() + '"');
-        csv.push(row.join(","));
-    }
-
+    const rows = document.querySelectorAll("table tbody tr");
+    csv.push('"Vehicle / Details","Fuel / Battery Source","Distance / Odometer","Status / Metrics"');
+    rows.forEach(r => {
+        if (r.style.display !== 'none') {
+            let cols = r.querySelectorAll("td");
+            if (cols.length >= 2) {
+                let rowData = [];
+                cols.forEach(c => rowData.push('"' + c.innerText.replace(/"/g, '""').trim() + '"'));
+                csv.push(rowData.join(","));
+            }
+        }
+    });
     const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
     const downloadLink = document.createElement("a");
     downloadLink.download = "Hirna_Fleet_Inventory.csv";
     downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
     downloadLink.click();
-    document.body.removeChild(downloadLink);
 }
 
 function openScheduleModal() {
@@ -434,33 +463,6 @@ function openScheduleModal() {
     }
 }
 </script>
-
-<!-- Import Vehicles CSV Modal -->
-<div class="modal fade" id="importVehiclesCsvModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog rounded-4 overflow-hidden">
-        <div class="modal-content border-0">
-            <form action="{{ route('import.csv') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="module_type" value="vehicles">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2"></i> Import Fleet Inventory (CSV)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label" style="font-weight: 500;">Select CSV File (.csv)</label>
-                        <input type="file" name="csv_file" accept=".csv, .txt" class="form-control rounded-3" required>
-                        <small class="text-muted mt-1 d-block">Expected columns: Make, Model, License Plate, Year, Category, Battery Capacity (kWh).</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-3 bg-light">
-                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-3"><i class="bi bi-cloud-upload me-1"></i> Import Fleet CSV</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- Schedule Maintenance Modal -->
 <div class="modal fade" id="schedulePMSModal" tabindex="-1" aria-labelledby="schedulePMSModalLabel" aria-hidden="true">

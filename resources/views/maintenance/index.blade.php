@@ -11,15 +11,12 @@
         <p class="page-header-subtitle">Schedule engine tune-ups, log service expenses, update maintenance statuses, and monitor fleet vehicle health.</p>
     </div>
     <div class="col-auto d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-success rounded-3" onclick="exportPmsToCSV();">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-        </button>
-        <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importPmsCsvModal">
-            <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
-        </button>
-        <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
-            <i class="bi bi-printer me-1"></i> Print / PDF
-        </button>
+        <div class="input-group" style="max-width: 320px;">
+            <input type="text" id="pmsSearchInput" class="form-control rounded-start-3 border-secondary-subtle" placeholder="Search service, vehicle, notes..." onkeyup="filterPmsTable()">
+            <button class="btn btn-danger rounded-end-3 fw-bold" type="button" onclick="filterPmsTable()" style="background: #CE2029 !important;">
+                <i class="bi bi-search me-1"></i> Search
+            </button>
+        </div>
         <button type="button" class="btn btn-premium d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#schedulePMSModal" onclick="openScheduleModal();">
             <i class="bi bi-calendar-plus me-1"></i> Schedule Maintenance
         </button>
@@ -231,78 +228,13 @@
     </div>
 </div>
 
-<!-- Import PMS CSV Modal -->
-<div class="modal fade" id="importPmsCsvModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered rounded-4 overflow-hidden">
-        <div class="modal-content border-0 shadow">
-            <form action="{{ route('import.csv') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="module_type" value="vehicles">
-                <div class="modal-header bg-dark text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2"></i> Import Maintenance Logs (CSV)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Select CSV File (.csv)</label>
-                        <input type="file" name="csv_file" accept=".csv, .txt" class="form-control rounded-3" required>
-                        <small class="text-muted mt-1 d-block">Expected columns: Vehicle Plate, Service Type, Cost (₱), Scheduled Date.</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-3 bg-light">
-                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-3"><i class="bi bi-cloud-upload me-1"></i> Import PMS CSV</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endsection
-
-@section('scripts')
-<script>
-    function openScheduleModal() {
-        const modalEl = document.getElementById('schedulePMSModal');
-        if (modalEl) {
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-        }
-    }
-
-    function toggleCompletionDate(recordId) {
-        const select = document.getElementById('statusSelect' + recordId);
-        const div = document.getElementById('completionDateDiv' + recordId);
-        if (!select || !div) return;
-        
-        const dateInput = div.querySelector('input');
-        
-        if (select.value === 'completed') {
-            div.classList.remove('d-none');
-            if (dateInput) dateInput.setAttribute('required', 'required');
-        } else {
-            div.classList.add('d-none');
-            if (dateInput) dateInput.removeAttribute('required');
-        }
-    }
-
-    function exportPmsToCSV() {
-        let csv = [];
-        const rows = document.querySelectorAll("table tr");
-        for (let i = 0; i < rows.length; i++) {
-            let row = [], cols = rows[i].querySelectorAll("td, th");
-            for (let j = 0; j < cols.length - 1; j++)
-                row.push('"' + cols[j].innerText.replace(/"/g, '""').trim() + '"');
-            csv.push(row.join(","));
-        }
-
-        const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
-        const downloadLink = document.createElement("a");
-        downloadLink.download = "Hirna_Maintenance_Records.csv";
-        downloadLink.href = window.URL.createObjectURL(csvFile);
-        downloadLink.style.display = "none";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+    function filterPmsTable() {
+        const input = document.getElementById('pmsSearchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('table tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? '' : 'none';
+        });
     }
 </script>
 @endsection

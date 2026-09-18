@@ -14,17 +14,14 @@
         <p class="page-header-subtitle">Auto-dispatch available Hirna Vehicle units, plan optimized eco-routes, and monitor live trips.</p>
     </div>
     <div class="col-auto d-flex gap-2 flex-wrap">
-        <button class="btn btn-danger rounded-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#telemetrySimulatorModal" onclick="launchTelemetrySimulator(999, 'Manila Hub (Port Area)', 'Makati Hub (Ayala Ave)', 'Sedan', 9.5, 3.8);">
+        <div class="input-group" style="max-width: 320px;">
+            <input type="text" id="tripSearchInput" class="form-control rounded-start-3 border-secondary-subtle" placeholder="Search driver, plate, location..." onkeyup="filterTripsTable()">
+            <button class="btn btn-danger rounded-end-3 fw-bold" type="button" onclick="filterTripsTable()" style="background: #CE2029 !important;">
+                <i class="bi bi-search me-1"></i> Search
+            </button>
+        </div>
+        <button class="btn btn-danger rounded-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#telemetrySimulatorModal" onclick="launchTelemetrySimulator(999, 'Manila Hub (Port Area)', 'Makati Hub (Ayala Ave)', 'Sedan', 9.5, 3.8);" style="background: #CE2029 !important;">
             <i class="bi bi-radar me-1"></i> Live Telemetry Simulator
-        </button>
-        <button class="btn btn-outline-success rounded-3" onclick="exportTripsToCSV();">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-        </button>
-        <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importTripsCsvModal">
-            <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
-        </button>
-        <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
-            <i class="bi bi-printer me-1"></i> Print / PDF
         </button>
     </div>
 </div>
@@ -1733,50 +1730,13 @@
         modal.show();
     }
 
-    function exportCompletedTripsCSV() {
-        const rows = [
-            ["Trip Ref", "Date", "Driver Name", "License Number", "Hirna Vehicle Model", "License Plate", "Origin Hub", "Destination Hub", "Distance (km)", "Trip Duration (min)", "Energy Consumed (kWh)", "Charging Expense (PHP)", "Driver Safety Score"],
-            ["#TRP-9082", "2026-08-16 16:45", "Juan Dela Cruz", "N01-18-99201", "Hyundai Accent Hirna Taxi", "TXI-9876", "Manila Hub (Port Area)", "Makati Hub (Ayala Ave)", "9.5", "22", "3.8", "43.70", "98%"],
-            ["#TRP-8910", "2026-08-16 14:10", "Marco Santos", "N02-19-44812", "Toyota Vios Hirna Taxi", "TXI-5421", "BGC Hub (Market Market)", "Quezon City Hub (Cubao)", "14.2", "35", "5.2", "59.80", "94%"],
-            ["#TRP-8744", "2026-08-15 11:30", "Ramon Fernandez", "N03-20-11029", "Nissan Almera Hirna Taxi", "TXI-1122", "Pasay Hub (MOA Complex)", "NAIA Terminal 3 Hub", "7.8", "18", "2.9", "33.35", "91%"],
-            ["#TRP-8601", "2026-08-15 09:15", "Gabriel Alonzo", "N04-21-77391", "Toyota HiAce Shuttle Van", "VAN-4509", "Alabang Hub (Filinvest)", "Ortigas Hub (Ortigas Center)", "21.0", "45", "8.4", "96.60", "88%"]
-        ];
-
-        let csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "Completed_Driver_Trips_History_Report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    function filterTripsTable() {
+    const input = document.getElementById('tripSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
+}
 </script>
-
-<!-- Import Trips CSV Modal -->
-<div class="modal fade" id="importTripsCsvModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog rounded-4 overflow-hidden">
-        <div class="modal-content border-0">
-            <form action="{{ route('import.csv') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="module_type" value="trips">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2"></i> Import Trip Dispatches (CSV)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label" style="font-weight: 500;">Select CSV File (.csv)</label>
-                        <input type="file" name="csv_file" accept=".csv, .txt" class="form-control rounded-3" required>
-                        <small class="text-muted mt-1 d-block">Expected columns: Start Hub, Destination, Distance (km), Estimated kWh, Duration (min).</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-3 bg-light">
-                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-3"><i class="bi bi-cloud-upload me-1"></i> Import Trips CSV</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection

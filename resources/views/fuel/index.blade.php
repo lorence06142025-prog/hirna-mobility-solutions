@@ -7,14 +7,12 @@
         <p class="page-header-subtitle">Log EV battery charging, monitor kWh energy metrics, and test AI prediction models.</p>
     </div>
     <div class="col-auto d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-success rounded-3" onclick="exportFuelTableToCSV();">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-        </button>
-        <button class="btn btn-outline-primary rounded-3" data-bs-toggle="modal" data-bs-target="#importFuelCsvModal">
-            <i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV
-        </button>
-        <button class="btn btn-outline-dark rounded-3" onclick="window.print();">
-            <i class="bi bi-printer me-1"></i> Print / PDF
+        <div class="input-group" style="max-width: 320px;">
+            <input type="text" id="fuelSearchInput" class="form-control rounded-start-3 border-secondary-subtle" placeholder="Search vehicle plate, fuel type..." onkeyup="filterFuelLogsTable()">
+            <button class="btn btn-danger rounded-end-3 fw-bold" type="button" onclick="filterFuelLogsTable()" style="background: #CE2029 !important;">
+                <i class="bi bi-search me-1"></i> Search
+            </button>
+        </div>
         <button class="btn btn-premium d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#logFuelModal">
             <i class="bi bi-plus-circle me-1"></i> Log Refuel / EV Charging
         </button>
@@ -479,52 +477,13 @@ function runPredictionTest(e) {
     .catch(err => console.error(err));
 }
 
-function exportFuelTableToCSV() {
-    let csv = [];
-    const rows = document.querySelectorAll("#fuelLogsTable tr");
-    
-    for (let i = 0; i < rows.length; i++) {
-        let row = [], cols = rows[i].querySelectorAll("td, th");
-        for (let j = 0; j < cols.length; j++) 
-            row.push('"' + cols[j].innerText.replace(/"/g, '""').trim() + '"');
-        csv.push(row.join(","));
-    }
-
-    const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
-    const downloadLink = document.createElement("a");
-    downloadLink.download = "Hirna_Fuel_and_Energy_Logs.csv";
-    downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+function filterFuelLogsTable() {
+    const input = document.getElementById('fuelSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
 }
 </script>
-
-<!-- Import EV Fuel Logs CSV Modal -->
-<div class="modal fade" id="importFuelCsvModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog rounded-4 overflow-hidden">
-        <div class="modal-content border-0">
-            <form action="{{ route('import.csv') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="module_type" value="fuel">
-                <div class="modal-header bg-success text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-arrow-up me-2"></i> Import EV Charging Logs (CSV)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label" style="font-weight: 500;">Select CSV File (.csv)</label>
-                        <input type="file" name="csv_file" accept=".csv, .txt" class="form-control rounded-3" required>
-                        <small class="text-muted mt-1 d-block">Expected columns: Date, Vehicle Plate, Energy (kWh), Cost (₱), Odometer (km), Charging Type.</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-3 bg-light">
-                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success rounded-3"><i class="bi bi-cloud-upload me-1"></i> Import Charging CSV</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection
