@@ -88,16 +88,41 @@
                         <td>
                             @if($record->status === 'completed')
                                 <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> Completed</span>
+                                <small class="d-block text-success fw-bold mt-1" style="font-size: 10.5px;"><i class="bi bi-check2-circle me-1"></i> Fleet Active / Available</small>
                             @elseif($record->status === 'in_progress')
-                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="bi bi-gear-fill spin me-1"></i> In Progress</span>
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="bi bi-gear-fill me-1"></i> In Progress</span>
+                                <small class="d-block text-danger fw-bold mt-1" style="font-size: 10.5px;"><i class="bi bi-exclamation-triangle-fill me-1"></i> Vehicle Maintenance (Not Available)</small>
                             @else
                                 <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="bi bi-clock-fill me-1"></i> Scheduled</span>
+                                <small class="d-block text-muted mt-1" style="font-size: 10.5px;">Pending PMS Service</small>
                             @endif
                         </td>
                         <td class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-3 fw-medium" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ $record->id }}">
-                                <i class="bi bi-pencil-square me-1"></i> Update Status
-                            </button>
+                            <div class="d-flex justify-content-end gap-1 flex-wrap">
+                                @if($record->status !== 'in_progress')
+                                    <form action="{{ route('maintenance.update-status', $record) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="status" value="in_progress">
+                                        <input type="hidden" name="cost" value="{{ $record->cost }}">
+                                        <button type="submit" class="btn btn-sm btn-warning text-dark rounded-3 px-2 py-1 fw-bold shadow-sm" style="font-size: 11px;" title="Set Maintenance In Progress (Takes vehicle offline to Maintenance)">
+                                            ⚙️ Set In Progress
+                                        </button>
+                                    </form>
+                                @endif
+                                @if($record->status !== 'completed')
+                                    <form action="{{ route('maintenance.update-status', $record) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="status" value="completed">
+                                        <input type="hidden" name="cost" value="{{ $record->cost }}">
+                                        <button type="submit" class="btn btn-sm btn-success rounded-3 px-2 py-1 fw-bold shadow-sm" style="font-size: 11px;" title="Mark Maintenance Completed (Releases vehicle to Active)">
+                                            ✅ Mark Completed
+                                        </button>
+                                    </form>
+                                @endif
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1 fw-medium" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ $record->id }}" style="font-size: 11px;">
+                                    <i class="bi bi-pencil-square me-1"></i> Edit Details
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -227,14 +252,44 @@
         </div>
     </div>
 </div>
+@endsection
 
-    function filterPmsTable() {
-        const input = document.getElementById('pmsSearchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('table tbody tr');
-        rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(input) ? '' : 'none';
-        });
+@section('scripts')
+<script>
+function toggleCompletionDate(recordId) {
+    const statusSelect = document.getElementById('statusSelect' + recordId);
+    const div = document.getElementById('completionDateDiv' + recordId);
+    if (statusSelect && div) {
+        if (statusSelect.value === 'completed') {
+            div.classList.remove('d-none');
+        } else {
+            div.classList.add('d-none');
+        }
     }
+}
+
+function filterPmsTable() {
+    const inputEl = document.getElementById('pmsSearchInput');
+    if (!inputEl) return;
+    const input = inputEl.value.toLowerCase().trim();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const text = (row.textContent || row.innerText || '').toLowerCase();
+        row.style.display = (!input || text.includes(input)) ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('pmsSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterPmsTable();
+            }
+        });
+        searchInput.addEventListener('input', filterPmsTable);
+    }
+});
 </script>
 @endsection

@@ -27,33 +27,51 @@ class MaintenanceController extends Controller
             'scheduled_date' => 'required|date',
         ]);
 
-        $record = MaintenanceRecord::create($validated);
-
-        // Update vehicle status to maintenance if appropriate
-        if ($validated['status'] === 'in_progress') {
-            Vehicle::find($validated['vehicle_id'])->update(['status' => 'maintenance']);
+        if ($validated['status'] === 'completed') {
+            $validated['completion_date'] = date('Y-m-d');
         }
 
-        return redirect()->back()->with('success', 'Maintenance scheduled successfully.');
+        $record = MaintenanceRecord::create($validated);
+
+        // Bi-directional synchronization with Fleet Vehicle Management
+        $vehicle = Vehicle::find($validated['vehicle_id']);
+        if ($vehicle) {
+            if ($validated['status'] === 'in_progress') {
+                $vehicle->update(['status' => 'maintenance']);
+            } elseif ($validated['status'] === 'completed') {
+                $vehicle->update(['status' => 'active']);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Preventive Maintenance Service (PMS) record created and vehicle availability synchronized.');
     }
 
     public function updateStatus(Request $request, MaintenanceRecord $record)
     {
         $validated = $request->validate([
             'status' => 'required|in:scheduled,in_progress,completed',
-            'completion_date' => 'nullable|date|required_if:status,completed',
+            'completion_date' => 'nullable|date',
             'cost' => 'required|numeric|min:0',
         ]);
 
-        $record->update($validated);
-
-        // If completed, release vehicle to active; if in progress, set to maintenance
-        if ($validated['status'] === 'completed') {
-            $record->vehicle->update(['status' => 'active']);
-        } elseif ($validated['status'] === 'in_progress') {
-            $record->vehicle->update(['status' => 'maintenance']);
+        if ($validated['status'] === 'completed' && empty($validated['completion_date'])) {
+            $validated['completion_date'] = date('Y-m-d');
         }
 
-        return redirect()->back()->with('success', 'Maintenance record updated successfully.');
+        $record->update($validated);
+
+        // Bi-directional synchronization with Fleet Vehicle Management
+        if ($record->vehicle) {
+            if ($validated['status'] === 'in_progress') {
+                $record->vehicle->update(['status' => 'maintenance']);
+            } elseif ($validated['status'] === 'completed') {
+                $record->vehicle->update(['status' => 'active']);
+            } elseif ($validated['status'] === 'scheduled' && $record->vehicle->status === 'maintenance') {
+                $record->vehicle->update(['status' => 'active']);
+            }
+        }
+
+        $statusLabel = ucfirst(str_replace('_', ' ', $validated['status']));
+        return redirect()->back()->with('success', "Maintenance status updated to '{$statusLabel}'. Vehicle availability in Fleet Management updated accordingly.");
     }
 }
