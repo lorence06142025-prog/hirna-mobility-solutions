@@ -34,6 +34,7 @@ Route::middleware(['role'])->group(function () {
     Route::get('/vehicles', [FleetController::class, 'index'])->name('vehicles.index');
     Route::post('/vehicles', [FleetController::class, 'storeVehicle'])->middleware('role:fleet_manager')->name('vehicles.store');
     Route::put('/vehicles/{vehicle}', [FleetController::class, 'updateVehicle'])->middleware('role:fleet_manager')->name('vehicles.update');
+    Route::post('/vehicles/{vehicle}/status', [FleetController::class, 'toggleStatus'])->middleware('role:fleet_manager,admin')->name('vehicles.toggle-status');
     Route::delete('/vehicles/{vehicle}', [FleetController::class, 'deleteVehicle'])->middleware('role:admin')->name('vehicles.destroy');
     Route::post('/fleet/assign-driver', [FleetController::class, 'assignDriver'])->middleware('role:fleet_manager,dispatcher')->name('fleet.assign-driver');
     Route::post('/fleet/drivers', [FleetController::class, 'storeDriver'])->middleware('role:fleet_manager')->name('fleet.drivers.store');

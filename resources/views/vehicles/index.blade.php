@@ -122,7 +122,24 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-1">
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        @if($vehicle->status === 'maintenance')
+                                            <form action="{{ route('vehicles.toggle-status', $vehicle) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="active">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-2 px-2 shadow-sm fw-bold" style="font-size: 11px;" title="Complete servicing and release vehicle back to Active Available status">
+                                                    ✅ Release to Active
+                                                </button>
+                                            </form>
+                                        @elseif($vehicle->status === 'active')
+                                            <form action="{{ route('vehicles.toggle-status', $vehicle) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="maintenance">
+                                                <button type="submit" class="btn btn-sm btn-warning text-dark rounded-2 px-2 shadow-sm fw-bold" style="font-size: 11px;" title="Set vehicle status to Maintenance (Not Available)">
+                                                    ⚙️ Send to Maintenance
+                                                </button>
+                                            </form>
+                                        @endif
                                         <button class="btn btn-sm btn-primary rounded-2 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#editVehicleModal{{ $vehicle->id }}" title="Edit Vehicle">
                                             <i class="bi bi-pencil-fill me-1"></i> Edit
                                         </button>

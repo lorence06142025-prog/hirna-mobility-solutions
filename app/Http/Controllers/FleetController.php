@@ -90,6 +90,47 @@ class FleetController extends Controller
         return redirect()->back()->with('success', 'Vehicle details updated and Maintenance (PMS) status synchronized.');
     }
 
+    public function toggleStatus(Request $request, Vehicle $vehicle)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:active,maintenance,offline',
+        ]);
+
+        $oldStatus = $vehicle->status;
+        $vehicle->update(['status' => $validated['status']]);
+
+        // Bi-directional synchronization with Maintenance PMS records
+        if ($validated['status'] === 'maintenance' && $oldStatus !== 'maintenance') {
+            $record = MaintenanceRecord::where('vehicle_id', $vehicle->id)
+                ->where('status', 'scheduled')
+                ->latest()
+                ->first();
+
+            if ($record) {
+                $record->update(['status' => 'in_progress']);
+            } else {
+                MaintenanceRecord::create([
+                    'vehicle_id' => $vehicle->id,
+                    'service_type' => 'Preventive Maintenance Service (PMS)',
+                    'description' => 'Vehicle status changed to Maintenance via Fleet Management',
+                    'cost' => 1500.00,
+                    'status' => 'in_progress',
+                    'scheduled_date' => date('Y-m-d'),
+                ]);
+            }
+        } elseif ($validated['status'] === 'active' && $oldStatus === 'maintenance') {
+            MaintenanceRecord::where('vehicle_id', $vehicle->id)
+                ->where('status', 'in_progress')
+                ->update([
+                    'status' => 'completed',
+                    'completion_date' => date('Y-m-d'),
+                ]);
+        }
+
+        $label = ucfirst($validated['status']);
+        return redirect()->back()->with('success', "Vehicle {$vehicle->license_plate} status updated to '{$label}' and PMS logs synchronized.");
+    }
+
     public function deleteVehicle(Vehicle $vehicle)
     {
         $vehicle->delete();
