@@ -132,13 +132,9 @@
                                                 </button>
                                             </form>
                                         @elseif($vehicle->status === 'active')
-                                            <form action="{{ route('vehicles.toggle-status', $vehicle) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="status" value="maintenance">
-                                                <button type="submit" class="btn btn-sm btn-warning text-dark rounded-2 px-2 shadow-sm fw-bold" style="font-size: 11px;" title="Set vehicle status to Maintenance (Not Available)">
-                                                    ⚙️ Send to Maintenance
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-sm btn-warning text-dark rounded-2 px-2 shadow-sm fw-bold" style="font-size: 11px;" onclick="openMaintenanceModalForVehicle({{ $vehicle->id }});" title="Send to Maintenance & edit specific service details">
+                                                ⚙️ Send to Maintenance
+                                            </button>
                                         @endif
                                         <button class="btn btn-sm btn-primary rounded-2 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#editVehicleModal{{ $vehicle->id }}" title="Edit Vehicle">
                                             <i class="bi bi-pencil-fill me-1"></i> Edit
@@ -475,6 +471,22 @@ function exportVehiclesToCSV() {
 function openScheduleModal() {
     const modalEl = document.getElementById('schedulePMSModal');
     if (modalEl) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+
+function openMaintenanceModalForVehicle(vehicleId) {
+    const modalEl = document.getElementById('schedulePMSModal');
+    if (modalEl) {
+        const selectEl = modalEl.querySelector('select[name="vehicle_id"]');
+        const statusEl = modalEl.querySelector('select[name="status"]');
+        if (selectEl) {
+            selectEl.value = vehicleId;
+        }
+        if (statusEl) {
+            statusEl.value = 'in_progress';
+        }
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
     }
