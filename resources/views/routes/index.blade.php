@@ -306,7 +306,11 @@ function calculateOptimizedRoutes(e) {
 function renderMapRoutes(data) {
     if (!routeMap) return;
 
-    polylineGroup.forEach(line => routeMap.removeLayer(line));
+    // Clear previous polylines & markers
+    polylineGroup.forEach(item => {
+        if (item.bgLine) routeMap.removeLayer(item.bgLine);
+        if (item.mainLine) routeMap.removeLayer(item.mainLine);
+    });
     polylineGroup = [];
 
     markerGroup.forEach(m => routeMap.removeLayer(m));
@@ -324,52 +328,75 @@ function renderMapRoutes(data) {
 
         const isEco = rt.is_eco;
         const color = rt.color || (isEco ? '#10B981' : (idx === 1 ? '#3B82F6' : '#F59E0B'));
-        const weight = isEco ? 6 : 4;
+        const shadowColor = isEco ? '#064E3B' : (idx === 1 ? '#1E3A8A' : '#78350F');
+        const weight = isEco ? 7 : 5;
         const opacity = isEco ? 0.95 : 0.75;
-        const dashArray = idx === 1 ? '8, 8' : (idx === 2 ? '4, 6' : null);
+        const dashArray = idx === 1 ? '10, 10' : (idx === 2 ? '6, 8' : null);
 
-        const polyline = L.polyline(latLngs, {
+        // Google Maps Style Layer 1: Dark Outer Border / Shadow Stroke
+        const bgPolyline = L.polyline(latLngs, {
+            color: shadowColor,
+            weight: weight + 4,
+            opacity: 0.45,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(routeMap);
+
+        // Google Maps Style Layer 2: Vibrant Foreground Directions Stroke
+        const mainPolyline = L.polyline(latLngs, {
             color: color,
             weight: weight,
             opacity: opacity,
+            lineCap: 'round',
+            lineJoin: 'round',
             dashArray: dashArray
         }).addTo(routeMap);
 
-        polyline.bindPopup(`
-            <div style="font-size: 12px; min-width: 180px;">
-                <strong style="color: ${color};">${rt.name}</strong><br>
+        const popupContent = `
+            <div style="font-size: 12px; min-width: 190px;">
+                <span class="badge ${isEco ? 'bg-success' : 'bg-primary'} text-white mb-1" style="font-size: 10px;">${rt.tag}</span>
+                <strong class="d-block" style="color: ${color}; font-size: 13px;">${rt.name}</strong>
+                <hr class="my-1">
                 <span><b>Distance:</b> ${rt.distance_km} km</span> &bull; 
                 <span><b>ETA:</b> ${rt.duration_minutes} mins</span><br>
                 <span><b>Traffic:</b> ${rt.traffic_condition}</span><br>
                 <span><b>Est. Fuel/Energy:</b> ${rt.estimated_fuel} ${rt.fuel_unit}</span><br>
-                <span class="fw-bold text-success">Cost: ₱${rt.charging_cost_php} PHP</span>
+                <span class="fw-bold text-success fs-6">Cost: ₱${rt.charging_cost_php} PHP</span>
             </div>
-        `);
+        `;
+
+        mainPolyline.bindPopup(popupContent);
+        bgPolyline.bindPopup(popupContent);
 
         // Clicking polyline directly on OpenStreetMap highlights its card
-        polyline.on('click', function() {
-            selectRoute(idx);
-        });
+        const clickHandler = function() { selectRoute(idx); };
+        mainPolyline.on('click', clickHandler);
+        bgPolyline.on('click', clickHandler);
 
-        polylineGroup.push(polyline);
+        polylineGroup.push({
+            bgLine: bgPolyline,
+            mainLine: mainPolyline
+        });
     });
 
-    // Add Start Origin Marker
+    // Add Google Maps Style Start Origin Marker
     if (data.start_coords) {
         const startMarker = L.circleMarker([data.start_coords.lat, data.start_coords.lng], {
-            color: '#10B981',
-            radius: 10,
+            color: '#ffffff',
+            weight: 3,
+            radius: 11,
             fillColor: '#10B981',
             fillOpacity: 1
-        }).addTo(routeMap).bindPopup(`<b>🟢 Start Hub: ${data.start}</b>`);
+        }).addTo(routeMap).bindPopup(`<b>🟢 Start Origin: ${data.start}</b>`);
         markerGroup.push(startMarker);
     }
 
-    // Add Destination Marker
+    // Add Google Maps Style Destination Marker
     if (data.end_coords) {
         const endMarker = L.circleMarker([data.end_coords.lat, data.end_coords.lng], {
-            color: '#CE2029',
-            radius: 10,
+            color: '#ffffff',
+            weight: 3,
+            radius: 11,
             fillColor: '#CE2029',
             fillOpacity: 1
         }).addTo(routeMap).bindPopup(`<b>🔴 Destination Hub: ${data.end}</b>`);
@@ -452,25 +479,29 @@ function renderRouteResults(data) {
 function selectRoute(index) {
     if (!polylineGroup || polylineGroup.length === 0) return;
 
-    // 1. Highlight selected polyline on Leaflet OpenStreetMap, dim non-selected routes
-    polylineGroup.forEach((line, i) => {
+    // 1. Highlight selected Google Maps style polyline layer, dim non-selected alternatives
+    polylineGroup.forEach((item, i) => {
+        const bgLine = item.bgLine;
+        const mainLine = item.mainLine;
+
         if (i === index) {
-            line.setStyle({
-                weight: 8,
-                opacity: 1.0
-            });
-            try { line.bringToFront(); } catch(e) {}
+            bgLine.setStyle({ weight: 12, opacity: 0.7 });
+            mainLine.setStyle({ weight: 8, opacity: 1.0 });
+
+            try {
+                bgLine.bringToFront();
+                mainLine.bringToFront();
+            } catch(e) {}
+
             try {
                 if (routeMap) {
-                    routeMap.fitBounds(line.getBounds(), { padding: [50, 50] });
-                    line.openPopup();
+                    routeMap.fitBounds(mainLine.getBounds(), { padding: [50, 50] });
+                    mainLine.openPopup();
                 }
             } catch(e) {}
         } else {
-            line.setStyle({
-                weight: 4,
-                opacity: 0.35
-            });
+            bgLine.setStyle({ weight: 5, opacity: 0.2 });
+            mainLine.setStyle({ weight: 4, opacity: 0.35 });
         }
     });
 
