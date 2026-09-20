@@ -346,6 +346,11 @@ function renderMapRoutes(data) {
             </div>
         `);
 
+        // Clicking polyline directly on OpenStreetMap highlights its card
+        polyline.on('click', function() {
+            selectRoute(idx);
+        });
+
         polylineGroup.push(polyline);
     });
 
@@ -371,12 +376,10 @@ function renderMapRoutes(data) {
         markerGroup.push(endMarker);
     }
 
-    // Fit Map View Bounds smoothly
-    if (boundsPoints.length > 0) {
-        try {
-            routeMap.fitBounds(boundsPoints, { padding: [40, 40] });
-        } catch(e) {}
-    }
+    // Auto-select the Recommended Eco-Route (Index 0) on load
+    setTimeout(() => {
+        selectRoute(0);
+    }, 150);
 }
 
 function renderRouteResults(data) {
@@ -396,7 +399,10 @@ function renderRouteResults(data) {
         const badgeBg = isEco ? 'bg-success text-white' : (idx === 1 ? 'bg-primary text-white' : 'bg-warning text-dark');
 
         html += `
-            <div class="card route-option-card border rounded-3 p-3 shadow-sm ${cardBorder}" style="transition: all 0.2s ease;">
+            <div class="card route-option-card border rounded-3 p-3 shadow-sm ${cardBorder}" 
+                 onclick="selectRoute(${idx})" 
+                 style="cursor: pointer; transition: all 0.25s ease;"
+                 id="route-card-${idx}">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
                     <div>
                         <span class="badge ${badgeBg} rounded-pill px-3 py-1 mb-1" style="font-size: 11px;">${rt.tag}</span>
@@ -431,8 +437,8 @@ function renderRouteResults(data) {
 
                 <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                     <small class="fw-medium" style="font-size: 11px;">${rt.traffic_condition}</small>
-                    <button type="button" class="btn btn-xs ${isEco ? 'btn-success' : 'btn-outline-dark'} rounded-pill px-3 py-1 fw-bold" onclick="focusRouteOnMap(${idx})">
-                        <i class="bi bi-eye-fill me-1"></i> Inspect Route
+                    <button type="button" class="btn btn-xs select-route-btn ${isEco ? 'btn-success' : 'btn-outline-dark'} rounded-pill px-3 py-1 fw-bold">
+                        <i class="bi bi-geo-alt-fill me-1"></i> Select Route
                     </button>
                 </div>
             </div>
@@ -443,13 +449,53 @@ function renderRouteResults(data) {
     resultsContainer.innerHTML = html;
 }
 
-function focusRouteOnMap(index) {
-    if (!polylineGroup[index] || !routeMap) return;
-    const line = polylineGroup[index];
-    try {
-        routeMap.fitBounds(line.getBounds(), { padding: [50, 50] });
-        line.openPopup();
-    } catch(e) {}
+function selectRoute(index) {
+    if (!polylineGroup || polylineGroup.length === 0) return;
+
+    // 1. Highlight selected polyline on Leaflet OpenStreetMap, dim non-selected routes
+    polylineGroup.forEach((line, i) => {
+        if (i === index) {
+            line.setStyle({
+                weight: 8,
+                opacity: 1.0
+            });
+            try { line.bringToFront(); } catch(e) {}
+            try {
+                if (routeMap) {
+                    routeMap.fitBounds(line.getBounds(), { padding: [50, 50] });
+                    line.openPopup();
+                }
+            } catch(e) {}
+        } else {
+            line.setStyle({
+                weight: 4,
+                opacity: 0.35
+            });
+        }
+    });
+
+    // 2. Highlight selected route card UI
+    const cards = document.querySelectorAll('.route-option-card');
+    cards.forEach((card, i) => {
+        const btn = card.querySelector('.select-route-btn');
+        if (i === index) {
+            card.classList.add('border-danger', 'shadow', 'bg-light');
+            card.style.borderWidth = '2px';
+            card.style.transform = 'scale(1.01)';
+            if (btn) {
+                btn.className = 'btn btn-xs select-route-btn btn-danger rounded-pill px-3 py-1 fw-bold';
+                btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Active Route';
+            }
+        } else {
+            card.classList.remove('border-danger', 'shadow', 'bg-light');
+            card.style.borderWidth = '1px';
+            card.style.transform = 'scale(1.0)';
+            if (btn) {
+                btn.className = 'btn btn-xs select-route-btn btn-outline-dark rounded-pill px-3 py-1 fw-bold';
+                btn.innerHTML = '<i class="bi bi-geo-alt-fill me-1"></i> Select Route';
+            }
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
