@@ -24,7 +24,22 @@ class User extends Authenticatable
         'phone_number',
         'password',
         'role',
+        'avatar_path',
+        'job_title',
     ];
+
+    /**
+     * Get the user's avatar image URL or fallback default avatar.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar_path && file_exists(public_path($this->avatar_path))) {
+            return asset($this->avatar_path);
+        }
+
+        $name = urlencode($this->name ?? 'User');
+        return "https://ui-avatars.com/api/?name={$name}&background=CE2029&color=ffffff&bold=true";
+    }
 
     /**
      * The attributes that should be hidden for serialization.

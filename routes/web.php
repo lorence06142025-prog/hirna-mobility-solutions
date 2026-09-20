@@ -24,6 +24,13 @@ Route::middleware(['role'])->group(function () {
     Route::post('/import/csv', [\App\Http\Controllers\ImportController::class, 'importCsv'])->name('import.csv');
     Route::get('/switch-role', [AuthController::class, 'switchRole'])->name('switch-role');
 
+    // User Profile, Security & Avatar Settings
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile/update', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.update-password');
+    Route::post('/profile/avatar', [\App\Http\Controllers\ProfileController::class, 'updateAvatar'])->name('profile.update-avatar');
+    Route::delete('/profile/avatar', [\App\Http\Controllers\ProfileController::class, 'removeAvatar'])->name('profile.remove-avatar');
+
     // Superadmin Security & User Access Control Center
     Route::get('/admin/security', [\App\Http\Controllers\SecurityController::class, 'index'])->middleware('role:admin')->name('admin.security.index');
     Route::post('/admin/security/unlock', [\App\Http\Controllers\SecurityController::class, 'unlockUser'])->middleware('role:admin')->name('admin.security.unlock');

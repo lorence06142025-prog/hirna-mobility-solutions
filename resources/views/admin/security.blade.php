@@ -162,12 +162,21 @@
                 @foreach($users as $usr)
                     <div class="list-group-item px-0 py-2 border-0 border-bottom">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <div>
-                                <strong class="text-dark d-block">{{ $usr->name }}</strong>
-                                <small class="text-muted d-block" style="font-size: 11px;">{{ $usr->email }}</small>
-                                @if(!empty($usr->phone_number))
-                                    <small class="text-success fw-medium d-block" style="font-size: 10.5px;"><i class="bi bi-telephone-fill me-1"></i> {{ $usr->phone_number }}</small>
-                                @endif
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ $usr->avatar_url ?? ('https://ui-avatars.com/api/?name=' . urlencode($usr->name) . '&background=CE2029&color=fff&size=128') }}" 
+                                     alt="{{ $usr->name }}" 
+                                     class="rounded-circle border border-2 border-danger shadow-sm flex-shrink-0" 
+                                     style="width: 36px; height: 36px; object-fit: cover;">
+                                <div>
+                                    <strong class="text-dark d-block" style="font-size: 13px; line-height: 1.2;">{{ $usr->name }}</strong>
+                                    @if(!empty($usr->job_title))
+                                        <small class="text-primary fw-medium d-block" style="font-size: 11px;">{{ $usr->job_title }}</small>
+                                    @endif
+                                    <small class="text-muted d-block" style="font-size: 11px;">{{ $usr->email }}</small>
+                                    @if(!empty($usr->phone_number))
+                                        <small class="text-success fw-medium d-block" style="font-size: 10.5px;"><i class="bi bi-telephone-fill me-1"></i> {{ $usr->phone_number }}</small>
+                                    @endif
+                                </div>
                             </div>
                             <span class="badge bg-dark" style="font-size: 10px;">{{ ucfirst($usr->role ?? 'User') }}</span>
                         </div>
@@ -309,6 +318,11 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Full Name</label>
                         <input type="text" name="name" class="form-control rounded-3" placeholder="e.g. Maria Clara Santos" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Job Title / Designation</label>
+                        <input type="text" name="job_title" class="form-control rounded-3" placeholder="e.g. Senior Fleet & Maintenance Supervisor">
                     </div>
 
                     <div class="row g-2 mb-3">
