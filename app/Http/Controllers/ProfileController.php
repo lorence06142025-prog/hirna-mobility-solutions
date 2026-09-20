@@ -157,36 +157,19 @@ class ProfileController extends Controller
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $savedLocal = false;
-            $avatarPath = null;
 
-            // Attempt 1: Standard local disk storage if writeable
-            try {
-                $destinationPath = public_path('uploads/avatars');
-                if (!file_exists($destinationPath)) {
-                    @mkdir($destinationPath, 0777, true);
-                }
-
-                if (file_exists($destinationPath) && is_writable($destinationPath)) {
-                    if ($user->avatar_path && !str_starts_with($user->avatar_path, 'data:') && file_exists(public_path($user->avatar_path))) {
-                        @unlink(public_path($user->avatar_path));
-                    }
-
-                    $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-                    $file->move($destinationPath, $filename);
-                    $avatarPath = 'uploads/avatars/' . $filename;
-                    $savedLocal = true;
-                }
-            } catch (\Throwable $e) {
-                $savedLocal = false;
+            // Remove old custom local avatar file if present
+            if ($user->avatar_path && !str_starts_with($user->avatar_path, 'data:') && file_exists(public_path($user->avatar_path))) {
+                @unlink(public_path($user->avatar_path));
             }
 
-            // Attempt 2: Read-Only Serverless Fallback (e.g. Vercel) -> Store optimized Base64 Data URI
-            if (!$savedLocal) {
-                $avatarPath = $this->convertToBase64Image($file);
-            }
+            // Convert image to optimized Base64 Data URI for guaranteed persistence across serverless executions (Vercel) & local environments
+            $avatarPath = $this->convertToBase64Image($file);
 
             $user->update(['avatar_path' => $avatarPath]);
+
+            // Refresh model to get fresh avatar_url
+            $user->refresh();
             session(['user_avatar' => $user->avatar_url]);
 
             SecurityLog::create([

@@ -411,7 +411,7 @@
                     $currentEmail = session('user_email', 'admin@hirna.ph');
                     
                     $authUser = \App\Models\User::where('email', \Illuminate\Support\Str::lower($currentEmail))->first();
-                    $userAvatarUrl = session('user_avatar', $authUser ? $authUser->avatar_url : 'https://ui-avatars.com/api/?name='.urlencode($currentName).'&background=CE2029&color=ffffff&bold=true');
+                    $userAvatarUrl = $authUser ? $authUser->avatar_url : session('user_avatar', 'https://ui-avatars.com/api/?name='.urlencode($currentName).'&background=CE2029&color=ffffff&bold=true');
 
                     $roleTitles = [
                         'admin' => 'System Administrator',
