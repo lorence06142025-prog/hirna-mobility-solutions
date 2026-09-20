@@ -190,6 +190,11 @@
 
 @section('scripts')
 <script>
+let routeMap = null;
+let polylineGroup = [];
+let markerGroup = [];
+const allHubs = @json($hubs);
+
 function filterRoutesTable() {
     const inputEl = document.getElementById('routeSearchInput');
     if (!inputEl) return;
@@ -201,7 +206,255 @@ function filterRoutesTable() {
     });
 }
 
+function initRouteMap() {
+    const mapContainer = document.getElementById('routeVisualizerMap');
+    if (!mapContainer) return;
+
+    if (routeMap) {
+        try { routeMap.remove(); } catch(e) {}
+        routeMap = null;
+    }
+    mapContainer._leaflet_id = null;
+
+    // Initialize Leaflet map over Metro Manila center (14.5800, 121.0300)
+    routeMap = L.map('routeVisualizerMap', { zoomControl: true }).setView([14.5800, 121.0300], 12);
+
+    // Add OpenStreetMap Tile Layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Hirna Mobility'
+    }).addTo(routeMap);
+
+    // Plot pre-configured Metro Manila Transit Hubs
+    Object.keys(allHubs).forEach(hubName => {
+        const coords = allHubs[hubName];
+        if (coords && coords.lat && coords.lng) {
+            const circleMarker = L.circleMarker([coords.lat, coords.lng], {
+                color: '#CE2029',
+                radius: 7,
+                fillColor: '#CE2029',
+                fillOpacity: 0.85
+            }).addTo(routeMap);
+
+            circleMarker.bindPopup(`<b>📍 ${hubName} Transit Hub</b><br><small>Lat: ${coords.lat}, Lng: ${coords.lng}</small>`);
+        }
+    });
+
+    // Auto-calculate initial route optimization on load
+    setTimeout(() => {
+        if (routeMap) routeMap.invalidateSize();
+        calculateOptimizedRoutes();
+    }, 400);
+}
+
+function calculateOptimizedRoutes(e) {
+    if (e) e.preventDefault();
+
+    const startSelect = document.getElementById('routeStart');
+    const endSelect = document.getElementById('routeEnd');
+    const fuelSelect = document.getElementById('routeFuelType');
+    const vehicleSelect = document.getElementById('routeVehicleType');
+
+    const start = startSelect ? startSelect.value : 'Manila';
+    const end = endSelect ? endSelect.value : 'Makati';
+    const fuel_type = fuelSelect ? fuelSelect.value : 'gasoline';
+    const vehicle_type = vehicleSelect ? vehicleSelect.value : 'Sedan';
+
+    const resultsContainer = document.getElementById('routeResultsContainer');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-danger mb-2" role="status"></div>
+                <div class="fw-bold text-dark">Calculating Multi-Fuel Eco-Routes...</div>
+                <small class="text-muted">Simulating live traffic congestion & fuel/energy consumption...</small>
+            </div>
+        `;
+    }
+
+    fetch('{{ route("routes.plan") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            start: start,
+            end: end,
+            fuel_type: fuel_type,
+            vehicle_type: vehicle_type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        renderMapRoutes(data);
+        renderRouteResults(data);
+    })
+    .catch(err => {
+        console.error("Route calculation error:", err);
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-danger p-3 rounded-3 text-center mb-0">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-1"></i>
+                    <strong>Failed to compute routes.</strong> Please check hub selection and try again.
+                </div>
+            `;
+        }
+    });
+}
+
+function renderMapRoutes(data) {
+    if (!routeMap) return;
+
+    polylineGroup.forEach(line => routeMap.removeLayer(line));
+    polylineGroup = [];
+
+    markerGroup.forEach(m => routeMap.removeLayer(m));
+    markerGroup = [];
+
+    if (!data.routes || data.routes.length === 0) return;
+
+    const boundsPoints = [];
+
+    data.routes.forEach((rt, idx) => {
+        if (!rt.path || rt.path.length === 0) return;
+
+        const latLngs = rt.path.map(pt => [pt.lat, pt.lng]);
+        latLngs.forEach(pt => boundsPoints.push(pt));
+
+        const isEco = rt.is_eco;
+        const color = rt.color || (isEco ? '#10B981' : (idx === 1 ? '#3B82F6' : '#F59E0B'));
+        const weight = isEco ? 6 : 4;
+        const opacity = isEco ? 0.95 : 0.75;
+        const dashArray = idx === 1 ? '8, 8' : (idx === 2 ? '4, 6' : null);
+
+        const polyline = L.polyline(latLngs, {
+            color: color,
+            weight: weight,
+            opacity: opacity,
+            dashArray: dashArray
+        }).addTo(routeMap);
+
+        polyline.bindPopup(`
+            <div style="font-size: 12px; min-width: 180px;">
+                <strong style="color: ${color};">${rt.name}</strong><br>
+                <span><b>Distance:</b> ${rt.distance_km} km</span> &bull; 
+                <span><b>ETA:</b> ${rt.duration_minutes} mins</span><br>
+                <span><b>Traffic:</b> ${rt.traffic_condition}</span><br>
+                <span><b>Est. Fuel/Energy:</b> ${rt.estimated_fuel} ${rt.fuel_unit}</span><br>
+                <span class="fw-bold text-success">Cost: ₱${rt.charging_cost_php} PHP</span>
+            </div>
+        `);
+
+        polylineGroup.push(polyline);
+    });
+
+    // Add Start Origin Marker
+    if (data.start_coords) {
+        const startMarker = L.circleMarker([data.start_coords.lat, data.start_coords.lng], {
+            color: '#10B981',
+            radius: 10,
+            fillColor: '#10B981',
+            fillOpacity: 1
+        }).addTo(routeMap).bindPopup(`<b>🟢 Start Hub: ${data.start}</b>`);
+        markerGroup.push(startMarker);
+    }
+
+    // Add Destination Marker
+    if (data.end_coords) {
+        const endMarker = L.circleMarker([data.end_coords.lat, data.end_coords.lng], {
+            color: '#CE2029',
+            radius: 10,
+            fillColor: '#CE2029',
+            fillOpacity: 1
+        }).addTo(routeMap).bindPopup(`<b>🔴 Destination Hub: ${data.end}</b>`);
+        markerGroup.push(endMarker);
+    }
+
+    // Fit Map View Bounds smoothly
+    if (boundsPoints.length > 0) {
+        try {
+            routeMap.fitBounds(boundsPoints, { padding: [40, 40] });
+        } catch(e) {}
+    }
+}
+
+function renderRouteResults(data) {
+    const resultsContainer = document.getElementById('routeResultsContainer');
+    if (!resultsContainer) return;
+
+    if (!data.routes || data.routes.length === 0) {
+        resultsContainer.innerHTML = `<div class="alert alert-warning">No route options available.</div>`;
+        return;
+    }
+
+    let html = `<div class="d-flex flex-column gap-3">`;
+
+    data.routes.forEach((rt, idx) => {
+        const isEco = rt.is_eco;
+        const cardBorder = isEco ? 'border-success bg-success bg-opacity-10' : 'border-secondary-subtle bg-white';
+        const badgeBg = isEco ? 'bg-success text-white' : (idx === 1 ? 'bg-primary text-white' : 'bg-warning text-dark');
+
+        html += `
+            <div class="card route-option-card border rounded-3 p-3 shadow-sm ${cardBorder}" style="transition: all 0.2s ease;">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                    <div>
+                        <span class="badge ${badgeBg} rounded-pill px-3 py-1 mb-1" style="font-size: 11px;">${rt.tag}</span>
+                        <h6 class="fw-bold text-dark mb-0">${rt.name}</h6>
+                    </div>
+                    <div class="text-end">
+                        <span class="fw-bold text-success fs-5">₱${rt.charging_cost_php}</span>
+                        <small class="text-muted d-block" style="font-size: 10px;">EST. COST (PHP)</small>
+                    </div>
+                </div>
+
+                <p class="small text-muted mb-2">${rt.description}</p>
+
+                <div class="row g-2 text-center pt-2 border-top" style="font-size: 11.5px;">
+                    <div class="col-3">
+                        <span class="text-muted d-block" style="font-size: 10px;">DISTANCE</span>
+                        <strong class="text-dark">${rt.distance_km} km</strong>
+                    </div>
+                    <div class="col-3">
+                        <span class="text-muted d-block" style="font-size: 10px;">TRAVEL TIME</span>
+                        <strong class="text-dark">${rt.duration_minutes} mins</strong>
+                    </div>
+                    <div class="col-3">
+                        <span class="text-muted d-block" style="font-size: 10px;">FUEL / ENERGY</span>
+                        <strong class="text-dark">${rt.estimated_fuel} ${rt.fuel_unit}</strong>
+                    </div>
+                    <div class="col-3">
+                        <span class="text-muted d-block" style="font-size: 10px;">AVG SPEED</span>
+                        <strong class="text-dark">${rt.avg_speed_kmh} km/h</strong>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                    <small class="fw-medium" style="font-size: 11px;">${rt.traffic_condition}</small>
+                    <button type="button" class="btn btn-xs ${isEco ? 'btn-success' : 'btn-outline-dark'} rounded-pill px-3 py-1 fw-bold" onclick="focusRouteOnMap(${idx})">
+                        <i class="bi bi-eye-fill me-1"></i> Inspect Route
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    resultsContainer.innerHTML = html;
+}
+
+function focusRouteOnMap(index) {
+    if (!polylineGroup[index] || !routeMap) return;
+    const line = polylineGroup[index];
+    try {
+        routeMap.fitBounds(line.getBounds(), { padding: [50, 50] });
+        line.openPopup();
+    } catch(e) {}
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initRouteMap();
+
     const searchInput = document.getElementById('routeSearchInput');
     if (searchInput) {
         searchInput.addEventListener('keydown', function(e) {

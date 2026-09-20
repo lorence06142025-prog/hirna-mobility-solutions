@@ -118,10 +118,8 @@ class RoutingService
                 'charging_cost_php' => number_format($cost1, 2),
                 'description' => "Optimized for $vehicleType ($fuelUnit). Bypasses heavy intersections.",
                 'is_eco' => true,
-                'path' => [
-                    ['lat' => $lat1, 'lng' => $lng1],
-                    ['lat' => $lat2, 'lng' => $lng2],
-                ]
+                'color' => '#10B981',
+                'path' => $this->generateInterpolatedPath($startCoords, $endCoords, 0.05)
             ],
             [
                 'name' => 'Expressway / Skyway Route',
@@ -137,10 +135,8 @@ class RoutingService
                 'charging_cost_php' => number_format($cost2, 2),
                 'description' => 'Higher average speed via Skyway corridor. Saves up to 8 minutes travel time.',
                 'is_eco' => false,
-                'path' => [
-                    ['lat' => $lat1, 'lng' => $lng1],
-                    ['lat' => $lat2, 'lng' => $lng2],
-                ]
+                'color' => '#3B82F6',
+                'path' => $this->generateInterpolatedPath($startCoords, $endCoords, -0.06)
             ],
             [
                 'name' => 'Standard City Arterial Route',
@@ -156,16 +152,16 @@ class RoutingService
                 'charging_cost_php' => number_format($cost3, 2),
                 'description' => 'Follows main surface avenues (Taft/EDSA). High stop-and-go fuel consumption.',
                 'is_eco' => false,
-                'path' => [
-                    ['lat' => $lat1, 'lng' => $lng1],
-                    ['lat' => $lat2, 'lng' => $lng2],
-                ]
+                'color' => '#F59E0B',
+                'path' => $this->generateInterpolatedPath($startCoords, $endCoords, 0.01)
             ]
         ];
 
         return [
             'start' => $start,
             'end' => $end,
+            'start_coords' => $startCoords,
+            'end_coords' => $endCoords,
             'routes' => $routesList
         ];
     }
@@ -178,17 +174,26 @@ class RoutingService
     }
 
     /**
-     * Interpolates 5 intermediate coordinates between start and end to simulate GPS breadcrumbs.
+     * Interpolates intermediate coordinates using quadratic Bezier curves for smooth OpenStreetMap polyline rendering.
      */
-    private function generateInterpolatedPath(array $start, array $end): array
+    private function generateInterpolatedPath(array $start, array $end, float $curveOffset = 0.0): array
     {
         $points = [];
-        $steps = 6;
+        $steps = 12;
+        $dLat = $end['lat'] - $start['lat'];
+        $dLng = $end['lng'] - $start['lng'];
+        $perpLat = -$dLng * $curveOffset;
+        $perpLng = $dLat * $curveOffset;
+
         for ($i = 0; $i <= $steps; $i++) {
-            $fraction = $i / $steps;
+            $t = $i / $steps;
+            $curveFactor = 4 * $t * (1 - $t);
+            $lat = $start['lat'] + $t * $dLat + $perpLat * $curveFactor;
+            $lng = $start['lng'] + $t * $dLng + $perpLng * $curveFactor;
+
             $points[] = [
-                'lat' => round($start['lat'] + ($end['lat'] - $start['lat']) * $fraction, 6),
-                'lng' => round($start['lng'] + ($end['lng'] - $start['lng']) * $fraction, 6),
+                'lat' => round($lat, 6),
+                'lng' => round($lng, 6),
             ];
         }
         return $points;
