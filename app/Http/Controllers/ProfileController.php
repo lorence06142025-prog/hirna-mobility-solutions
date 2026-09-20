@@ -141,6 +141,7 @@ class ProfileController extends Controller
 
     /**
      * Upload and update user profile picture avatar.
+     * Supports both standard writeable disk (XAMPP/VPS) and read-only serverless filesystems (Vercel).
      */
     public function updateAvatar(Request $request)
     {
@@ -156,31 +157,44 @@ class ProfileController extends Controller
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            
-            $destinationPath = public_path('uploads/avatars');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0777, true);
+            $savedLocal = false;
+            $avatarPath = null;
+
+            // Attempt 1: Standard local disk storage if writeable
+            try {
+                $destinationPath = public_path('uploads/avatars');
+                if (!file_exists($destinationPath)) {
+                    @mkdir($destinationPath, 0777, true);
+                }
+
+                if (file_exists($destinationPath) && is_writable($destinationPath)) {
+                    if ($user->avatar_path && !str_starts_with($user->avatar_path, 'data:') && file_exists(public_path($user->avatar_path))) {
+                        @unlink(public_path($user->avatar_path));
+                    }
+
+                    $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $file->move($destinationPath, $filename);
+                    $avatarPath = 'uploads/avatars/' . $filename;
+                    $savedLocal = true;
+                }
+            } catch (\Throwable $e) {
+                $savedLocal = false;
             }
 
-            // Remove old custom avatar file if present
-            if ($user->avatar_path && file_exists(public_path($user->avatar_path))) {
-                @unlink(public_path($user->avatar_path));
+            // Attempt 2: Read-Only Serverless Fallback (e.g. Vercel) -> Store optimized Base64 Data URI
+            if (!$savedLocal) {
+                $avatarPath = $this->convertToBase64Image($file);
             }
 
-            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move($destinationPath, $filename);
-
-            $avatarPath = 'uploads/avatars/' . $filename;
             $user->update(['avatar_path' => $avatarPath]);
-
-            session(['user_avatar' => asset($avatarPath)]);
+            session(['user_avatar' => $user->avatar_url]);
 
             SecurityLog::create([
                 'event_type' => 'avatar_update',
                 'email' => $user->email,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'details' => "User uploaded new profile picture: {$avatarPath}",
+                'details' => "User uploaded new profile picture",
             ]);
 
             return redirect()->back()->with('success', '🖼️ Profile picture uploaded and updated successfully.');
@@ -190,13 +204,68 @@ class ProfileController extends Controller
     }
 
     /**
+     * Convert an uploaded image file into an optimized Base64 Data URI string.
+     */
+    private function convertToBase64Image($file): string
+    {
+        $mimeType = $file->getMimeType() ?: 'image/jpeg';
+        $filePath = $file->getRealPath();
+
+        // Optional GD Optimization: downscale to 300x300 max to keep payload tiny
+        if (function_exists('imagecreatefromstring')) {
+            try {
+                $rawContent = file_get_contents($filePath);
+                $srcImg = @imagecreatefromstring($rawContent);
+                if ($srcImg !== false) {
+                    $width = imagesx($srcImg);
+                    $height = imagesy($srcImg);
+                    $maxSize = 300;
+
+                    if ($width > $maxSize || $height > $maxSize) {
+                        $ratio = min($maxSize / $width, $maxSize / $height);
+                        $newWidth = (int)($width * $ratio);
+                        $newHeight = (int)($height * $ratio);
+
+                        $dstImg = imagecreatetruecolor($newWidth, $newHeight);
+                        imagealphablending($dstImg, false);
+                        imagesavealpha($dstImg, true);
+
+                        imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                        imagedestroy($srcImg);
+                        $srcImg = $dstImg;
+                    }
+
+                    ob_start();
+                    if ($mimeType === 'image/png') {
+                        imagepng($srcImg, null, 8);
+                    } elseif ($mimeType === 'image/webp' && function_exists('imagewebp')) {
+                        imagewebp($srcImg, null, 80);
+                    } else {
+                        imagejpeg($srcImg, null, 85);
+                        $mimeType = 'image/jpeg';
+                    }
+                    $imageData = ob_get_clean();
+                    imagedestroy($srcImg);
+
+                    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
+            } catch (\Throwable $e) {
+                // Ignore GD error and fall back to raw file content
+            }
+        }
+
+        $rawContent = file_get_contents($filePath);
+        return 'data:' . $mimeType . ';base64,' . base64_encode($rawContent);
+    }
+
+    /**
      * Remove custom profile picture and reset to default.
      */
     public function removeAvatar()
     {
         $user = $this->getActiveUser();
 
-        if ($user->avatar_path && file_exists(public_path($user->avatar_path))) {
+        if ($user->avatar_path && !str_starts_with($user->avatar_path, 'data:') && file_exists(public_path($user->avatar_path))) {
             @unlink(public_path($user->avatar_path));
         }
 

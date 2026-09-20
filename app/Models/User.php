@@ -33,8 +33,13 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute(): string
     {
-        if ($this->avatar_path && file_exists(public_path($this->avatar_path))) {
-            return asset($this->avatar_path);
+        if (!empty($this->avatar_path)) {
+            if (str_starts_with($this->avatar_path, 'data:') || str_starts_with($this->avatar_path, 'http://') || str_starts_with($this->avatar_path, 'https://')) {
+                return $this->avatar_path;
+            }
+            if (file_exists(public_path($this->avatar_path))) {
+                return asset($this->avatar_path);
+            }
         }
 
         $name = urlencode($this->name ?? 'User');

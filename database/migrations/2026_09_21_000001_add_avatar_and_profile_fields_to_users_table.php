@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'avatar_path')) {
-                $table->string('avatar_path')->nullable()->after('role');
+                $table->longText('avatar_path')->nullable()->after('role');
             }
             if (!Schema::hasColumn('users', 'job_title')) {
                 $table->string('job_title')->nullable()->after('avatar_path');
