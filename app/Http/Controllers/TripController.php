@@ -269,7 +269,7 @@ class TripController extends Controller
     }
 
     /**
-     * Process live telemetry GPS simulation broadcast.
+     * Process live telemetry GPS simulation broadcast with dynamic Haversine ETA & distance calculations.
      */
     public function simulateTelemetry(Request $request, Trip $trip)
     {
@@ -296,12 +296,58 @@ class TripController extends Controller
         if ($validated['speed'] > 80) $safetyScore -= 15;
         if ($validated['is_harsh_braking'] ?? false) $safetyScore -= 10;
         if (($validated['idle_seconds'] ?? 0) > 30) $safetyScore -= 5;
-
         $safetyScore = max(50, $safetyScore);
+
+        // Destination coordinates
+        $destLat = (float)($trip->end_lat ?: 14.5547);
+        $destLng = (float)($trip->end_lng ?: 121.0244);
+
+        // Calculate dynamic remaining distance using Haversine formula
+        $remainingDistance = $this->routingService->haversineDistance(
+            (float)$validated['lat'],
+            (float)$validated['lng'],
+            $destLat,
+            $destLng
+        );
+
+        $totalDistance = max((float)$trip->distance_km, 0.1);
+        $traveledDistance = max(0, round($totalDistance - $remainingDistance, 2));
+        $progressPercent = min(100, round(($traveledDistance / $totalDistance) * 100, 1));
+
+        // Dynamic ETA Calculation: ETA (mins) = (remaining_distance / current_speed) * 60
+        $speed = (float)$validated['speed'];
+        $effectiveSpeed = $speed > 0 ? $speed : 35.0; // Fallback to 35 km/h average transit speed when idle/stopped
+        $etaMinutesDecimal = ($remainingDistance / $effectiveSpeed) * 60;
+
+        $mins = (int) floor($etaMinutesDecimal);
+        $secs = (int) round(($etaMinutesDecimal - $mins) * 60);
+        if ($secs >= 60) {
+            $mins += 1;
+            $secs = 0;
+        }
+
+        $etaFormatted = ($remainingDistance <= 0.05) ? "Arrived" : "{$mins} min {$secs} sec";
+
+        // Traffic status label
+        $trafficStatus = '🟢 Flowing @ ' . round($effectiveSpeed) . ' km/h';
+        if ($speed == 0) {
+            $trafficStatus = '🔴 Stopped (Traffic Light / Stop Event)';
+        } elseif ($speed < 30) {
+            $trafficStatus = '🟡 Slow Congestion (' . round($speed) . ' km/h)';
+        } elseif ($speed > 80) {
+            $trafficStatus = '⚡ High Speed Expressway (' . round($speed) . ' km/h)';
+        }
 
         return response()->json([
             'status' => 'success',
             'current_safety_score' => $safetyScore,
+            'remaining_distance_km' => $remainingDistance,
+            'traveled_distance_km' => $traveledDistance,
+            'eta_minutes' => round($etaMinutesDecimal, 2),
+            'eta_formatted' => $etaFormatted,
+            'progress_percent' => $progressPercent,
+            'traffic_status' => $trafficStatus,
+            'current_speed' => $speed,
             'log' => $tripLog,
         ]);
     }

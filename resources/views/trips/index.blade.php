@@ -319,18 +319,22 @@
                 <!-- Telemetry Monitors & Live Incident Feed -->
                 <div class="col-lg-5">
                     <div class="card border-0 rounded-4 p-3 shadow-sm bg-light mb-3">
-                        <div class="row text-center">
-                            <div class="col-4 border-end">
-                                <small class="text-muted d-block" style="font-size: 11px;">CURRENT SPEED</small>
-                                <h4 class="fw-bold mb-0 text-primary" id="simSpeed">0 <span class="fs-6 fw-normal">km/h</span></h4>
+                        <div class="row text-center g-1">
+                            <div class="col-3 border-end">
+                                <small class="text-muted d-block" style="font-size: 10px;">CURRENT SPEED</small>
+                                <h5 class="fw-bold mb-0 text-primary" id="simSpeed">0 <span class="fs-6 fw-normal">km/h</span></h5>
                             </div>
-                            <div class="col-4 border-end">
-                                <small class="text-muted d-block" style="font-size: 11px;">IDLE DURATION</small>
-                                <h4 class="fw-bold mb-0 text-warning" id="simIdle">0s</h4>
+                            <div class="col-3 border-end">
+                                <small class="text-muted d-block" style="font-size: 10px;">REM DIST</small>
+                                <h5 class="fw-bold mb-0 text-dark" id="simRemainingDist">0.0 km</h5>
                             </div>
-                            <div class="col-4">
-                                <small class="text-muted d-block" style="font-size: 11px;">SAFETY RATING</small>
-                                <h4 class="fw-bold mb-0 text-success" id="simSafetyScore">100%</h4>
+                            <div class="col-3 border-end">
+                                <small class="text-muted d-block" style="font-size: 10px;">DYNAMIC ETA</small>
+                                <h5 class="fw-bold mb-0 text-danger" id="simEta">0m 0s</h5>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted d-block" style="font-size: 10px;">SAFETY</small>
+                                <h5 class="fw-bold mb-0 text-success" id="simSafetyScore">100%</h5>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -746,18 +750,22 @@
                     <div class="col-md-7">
                         <div class="card border-0 rounded-4 p-3 shadow-sm mb-3">
                             <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-1"></i> Telemetry & Speed Monitor</h6>
-                            <div class="row text-center mb-3">
-                                <div class="col-4 border-end">
-                                    <small class="text-muted d-block" style="font-size: 11px;">Current Speed</small>
-                                    <h4 class="fw-bold mb-0 text-primary" id="simSpeedM">0 <span class="fs-6 fw-normal">km/h</span></h4>
+                            <div class="row text-center mb-3 g-1">
+                                <div class="col-3 border-end">
+                                    <small class="text-muted d-block" style="font-size: 10.5px;">Current Speed</small>
+                                    <h5 class="fw-bold mb-0 text-primary" id="simSpeedM">0 <span class="fs-6 fw-normal">km/h</span></h5>
                                 </div>
-                                <div class="col-4 border-end">
-                                    <small class="text-muted d-block" style="font-size: 11px;">Idle Duration</small>
-                                    <h4 class="fw-bold mb-0 text-warning" id="simIdleM">0s</h4>
+                                <div class="col-3 border-end">
+                                    <small class="text-muted d-block" style="font-size: 10.5px;">Remaining Dist</small>
+                                    <h5 class="fw-bold mb-0 text-dark" id="simRemainingDistM">0.0 km</h5>
                                 </div>
-                                <div class="col-4">
-                                    <small class="text-muted d-block" style="font-size: 11px;">Safety Rating</small>
-                                    <h4 class="fw-bold mb-0 text-success" id="simSafetyScoreM">100%</h4>
+                                <div class="col-3 border-end">
+                                    <small class="text-muted d-block" style="font-size: 10.5px;">Dynamic ETA</small>
+                                    <h5 class="fw-bold mb-0 text-danger" id="simEtaM">0m 0s</h5>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block" style="font-size: 10.5px;">Safety Score</small>
+                                    <h5 class="fw-bold mb-0 text-success" id="simSafetyScoreM">100%</h5>
                                 </div>
                             </div>
 
@@ -1073,6 +1081,19 @@
         const lngOffset = (((Math.abs(hash >> 3)) % 100) / 100) * 0.12 - 0.06;
         
         return [14.5500 + latOffset, 121.0200 + lngOffset];
+    }
+
+    // Dynamic Haversine distance calculator between two lat/lng points in km
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round((R * c) * 100) / 100;
     }
 
     // Simulated path arrays
@@ -1512,8 +1533,8 @@
             console.warn("Modal map animation frame bypassed:", e);
         }
 
-        // Randomize speed based on triggers
-        let speed = 42 + Math.floor(Math.random() * 22); // standard: 42-64 km/h
+        // Randomize speed based on triggers (20-65 km/h realistic simulation)
+        let speed = 35 + Math.floor(Math.random() * 25); // standard: 35-60 km/h
         let idleSec = 0;
         let isHarsh = false;
 
@@ -1525,13 +1546,24 @@
             isHarsh = true;
             harshBrakeTrigger = false;
         } else if (Math.random() > 0.88) {
-            // Idle event
+            // Idle / Traffic Light / Passenger Stop Event
             speed = 0;
             idleSec = 15;
             totalIdleSeconds += 15;
         }
 
         currentVehicleSpeed = speed;
+
+        // Dynamic Haversine Remaining Distance & Real-Time ETA Calculation
+        const destLatLng = getLatLng(simEnd) || [14.5547, 121.0244];
+        const remDistKm = calculateHaversineDistance(point.lat, point.lng, destLatLng[0], destLatLng[1]);
+        
+        const effectiveSpeed = speed > 0 ? speed : 35; // Fallback to 35 km/h average speed when idle/stopped
+        const etaMinutesDecimal = (remDistKm / effectiveSpeed) * 60;
+        let etaMins = Math.floor(etaMinutesDecimal);
+        let etaSecs = Math.round((etaMinutesDecimal - etaMins) * 60);
+        if (etaSecs >= 60) { etaMins++; etaSecs = 0; }
+        const etaText = remDistKm <= 0.05 ? "Arrived" : `${etaMins}m ${etaSecs}s`;
 
         // Cumulative fuel estimation
         let baseBurnRate = 0.08;
@@ -1547,6 +1579,14 @@
         ['simSpeed', 'simSpeedM'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = `${speed} <span class="fs-6 fw-normal">km/h</span>`;
+        });
+        ['simRemainingDist', 'simRemainingDistM'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = remDistKm.toFixed(1) + " km";
+        });
+        ['simEta', 'simEtaM'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = etaText;
         });
         ['simIdle', 'simIdleM'].forEach(id => {
             const el = document.getElementById(id);
@@ -1586,14 +1626,33 @@
                     safetyScoreTracker = data.current_safety_score;
                     updateSafetyScoreBoth(safetyScoreTracker);
 
+                    if (data.remaining_distance_km !== undefined) {
+                        ['simRemainingDist', 'simRemainingDistM'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.innerText = data.remaining_distance_km.toFixed(1) + " km";
+                        });
+                    }
+                    if (data.eta_formatted) {
+                        ['simEta', 'simEtaM'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.innerText = data.eta_formatted;
+                        });
+                    }
+                    if (data.progress_percent !== undefined) {
+                        ['simProgressBar', 'simProgressBarM'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.style.width = data.progress_percent + "%";
+                        });
+                    }
+
                     if (speed > 80) {
                         addSimFeedEvent(`🚨 Speed Violation: ${speed} km/h recorded. Safety score: ${safetyScoreTracker}%.`, "danger");
                     } else if (isHarsh) {
                         addSimFeedEvent(`⚠️ Safety Trigger: Harsh Braking detected. Safety score: ${safetyScoreTracker}%.`, "warning");
                     } else if (speed === 0) {
-                        addSimFeedEvent(`🚦 Traffic Idle: Hirna Vehicle idling at intersection (+15s).`, "warning");
+                        addSimFeedEvent(`🚦 Traffic Idle: Hirna Vehicle idling at intersection (+15s). ETA: ${data.eta_formatted || etaText}`, "warning");
                     } else {
-                        addSimFeedEvent(`📡 GPS: Lat ${point.lat.toFixed(4)}, Lng ${point.lng.toFixed(4)} | Speed ${speed} km/h`, "secondary");
+                        addSimFeedEvent(`📡 GPS: Lat ${point.lat.toFixed(4)}, Lng ${point.lng.toFixed(4)} | Speed ${speed} km/h | ETA ${data.eta_formatted || etaText}`, "secondary");
                     }
                 } else {
                     logDemoStepFeed(speed, isHarsh, idleSec, point);
