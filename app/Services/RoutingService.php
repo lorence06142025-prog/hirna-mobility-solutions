@@ -83,38 +83,60 @@ class RoutingService
             default => 'Liters (Gas)',
         };
 
-        // Try fetching real street turn-by-turn road geometry from OpenStreetMap OSRM Engine
-        $realOsrmPath = $this->fetchOsrmRoute($lat1, $lng1, $lat2, $lng2);
+        // Midpoint coordinates for intermediate corridor waypoints
+        $midLat = ($lat1 + $lat2) / 2;
+        $midLng = ($lng1 + $lng2) / 2;
+        $dLat = $lat2 - $lat1;
+        $dLng = $lng2 - $lng1;
 
-        // 1. Direct Eco Route
+        // Skyway Highway Corridor Waypoint (Offset west/north)
+        $skywayVia = [
+            'lat' => round($midLat - $dLng * 0.15, 6),
+            'lng' => round($midLng + $dLat * 0.15, 6)
+        ];
+
+        // Surface City Avenue Waypoint (Offset east/south via EDSA/C5)
+        $surfaceVia = [
+            'lat' => round($midLat + $dLng * 0.20, 6),
+            'lng' => round($midLng - $dLat * 0.20, 6)
+        ];
+
+        // Fetch real street turn-by-turn road geometries from OpenStreetMap OSRM Engine
+        $path1 = $this->fetchOsrmRoute($lat1, $lng1, $lat2, $lng2) 
+                 ?: $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, 0.0);
+
+        $path2 = $this->fetchOsrmRoute($lat1, $lng1, $lat2, $lng2, $skywayVia) 
+                 ?: $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, -0.035);
+
+        $path3 = $this->fetchOsrmRoute($lat1, $lng1, $lat2, $lng2, $surfaceVia) 
+                 ?: $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, 0.045);
+
+        // 1. Recommended Eco-Optimized Route (Optimal Balance & Fuel Efficiency)
+        $dist1 = max(1.0, round($distance, 1));
         $speed1 = 48.5;
-        $kwh1 = $fuelPredictor->predict($distance, $speed1, $vehicleType, $fuelType);
+        $kwh1 = round($fuelPredictor->predict($dist1, $speed1, $vehicleType, $fuelType), 2);
         $cost1 = round($kwh1 * $ratePerUnit, 2);
-        $duration1 = round(($distance / $speed1) * 60);
+        $duration1 = max(2, round(($dist1 / $speed1) * 60));
 
-        // 2. Highway / Express Route
-        $dist2 = round($distance * 1.15, 1);
-        $speed2 = 68.0;
-        $kwh2 = $fuelPredictor->predict($dist2, $speed2, $vehicleType, $fuelType);
+        // 2. Expressway / Skyway Route (Fastest ETA ⚡, High Highway Speed)
+        $dist2 = max(1.2, round($distance * 1.18, 1));
+        $speed2 = 72.0;
+        $kwh2 = round($fuelPredictor->predict($dist2, $speed2, $vehicleType, $fuelType) * 1.12, 2);
         $cost2 = round($kwh2 * $ratePerUnit, 2);
-        $duration2 = round(($dist2 / $speed2) * 60);
+        $duration2 = max(2, round(($dist2 / $speed2) * 60));
 
-        // 3. City Bypass Route
-        $dist3 = round($distance * 1.25, 1);
-        $speed3 = 35.0;
-        $kwh3 = $fuelPredictor->predict($dist3, $speed3, $vehicleType, $fuelType);
+        // 3. Standard City Arterial Route (City Surface / EDSA / C5 🚗, Traffic Delays)
+        $dist3 = max(1.4, round($distance * 1.32, 1));
+        $speed3 = 28.0;
+        $kwh3 = round($fuelPredictor->predict($dist3, $speed3, $vehicleType, $fuelType) * 1.35, 2);
         $cost3 = round($kwh3 * $ratePerUnit, 2);
-        $duration3 = round(($dist3 / $speed3) * 60);
-
-        $path1 = $realOsrmPath ?: $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, 0.0);
-        $path2 = $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, -0.012);
-        $path3 = $this->generateDetailedRoadNetworkPath($startCoords, $endCoords, 0.015);
+        $duration3 = max(5, round(($dist3 / $speed3) * 60));
 
         $routesList = [
             [
                 'name' => 'Eco-Optimized Route (Recommended)',
                 'tag' => 'Recommended Eco-Path 🌿',
-                'distance_km' => $distance,
+                'distance_km' => $dist1,
                 'avg_speed_kmh' => $speed1,
                 'duration_minutes' => $duration1,
                 'traffic_condition' => '🟢 Low Congestion (Flowing @ 48 km/h)',
@@ -123,7 +145,7 @@ class RoutingService
                 'fuel_unit' => $fuelUnit,
                 'fuel_type' => ucfirst($fuelType),
                 'charging_cost_php' => number_format($cost1, 2),
-                'description' => "Optimized for $vehicleType ($fuelUnit). Follows real street turn-by-turn road networks.",
+                'description' => "Lowest fuel burn & carbon footprint. Bypasses heavy intersections.",
                 'is_eco' => true,
                 'color' => '#10B981',
                 'path' => $path1
@@ -134,13 +156,13 @@ class RoutingService
                 'distance_km' => $dist2,
                 'avg_speed_kmh' => $speed2,
                 'duration_minutes' => $duration2,
-                'traffic_condition' => '🟡 Moderate Highway Flow (Speed: 68 km/h)',
+                'traffic_condition' => '🟡 High-Speed Skyway Corridor (Speed: 72 km/h)',
                 'predicted_kwh' => $kwh2,
                 'estimated_fuel' => $kwh2,
                 'fuel_unit' => $fuelUnit,
                 'fuel_type' => ucfirst($fuelType),
                 'charging_cost_php' => number_format($cost2, 2),
-                'description' => 'Higher average speed via Skyway highway corridor. Saves up to 8 minutes travel time.',
+                'description' => 'Fastest travel time via Skyway elevated highway. Saves up to 8-12 mins travel time.',
                 'is_eco' => false,
                 'color' => '#3B82F6',
                 'path' => $path2
@@ -151,13 +173,13 @@ class RoutingService
                 'distance_km' => $dist3,
                 'avg_speed_kmh' => $speed3,
                 'duration_minutes' => $duration3,
-                'traffic_condition' => '🔴 Heavy Urban Traffic (+12 min delay)',
+                'traffic_condition' => '🔴 Heavy Urban Congestion (+15 min stop-and-go delay)',
                 'predicted_kwh' => $kwh3,
                 'estimated_fuel' => $kwh3,
                 'fuel_unit' => $fuelUnit,
                 'fuel_type' => ucfirst($fuelType),
                 'charging_cost_php' => number_format($cost3, 2),
-                'description' => 'Follows main surface avenues (Taft/EDSA/C5). High stop-and-go fuel consumption.',
+                'description' => 'Follows main surface avenues (EDSA / Taft / C5). High stop-and-go fuel consumption.',
                 'is_eco' => false,
                 'color' => '#F59E0B',
                 'path' => $path3
@@ -176,10 +198,17 @@ class RoutingService
     /**
      * Fetch real street turn-by-turn geometry from OpenStreetMap OSRM public routing API.
      */
-    public function fetchOsrmRoute(float $lat1, float $lng1, float $lat2, float $lng2): ?array
+    public function fetchOsrmRoute(float $lat1, float $lng1, float $lat2, float $lng2, ?array $viaCoords = null): ?array
     {
         try {
-            $url = "https://router.project-osrm.org/route/v1/driving/{$lng1},{$lat1};{$lng2},{$lat2}?overview=full&geometries=geojson";
+            if ($viaCoords && isset($viaCoords['lat'], $viaCoords['lng'])) {
+                $viaLat = $viaCoords['lat'];
+                $viaLng = $viaCoords['lng'];
+                $url = "https://router.project-osrm.org/route/v1/driving/{$lng1},{$lat1};{$viaLng},{$viaLat};{$lng2},{$lat2}?overview=full&geometries=geojson";
+            } else {
+                $url = "https://router.project-osrm.org/route/v1/driving/{$lng1},{$lat1};{$lng2},{$lat2}?overview=full&geometries=geojson";
+            }
+
             $response = \Illuminate\Support\Facades\Http::timeout(3)->get($url);
             if ($response->successful()) {
                 $data = $response->json();
@@ -209,7 +238,7 @@ class RoutingService
     private function generateDetailedRoadNetworkPath(array $start, array $end, float $curveOffset = 0.0): array
     {
         $points = [];
-        $steps = 24;
+        $steps = 28;
         $dLat = $end['lat'] - $start['lat'];
         $dLng = $end['lng'] - $start['lng'];
         $perpLat = -$dLng * $curveOffset;
@@ -217,8 +246,8 @@ class RoutingService
 
         for ($i = 0; $i <= $steps; $i++) {
             $t = $i / $steps;
-            // Combined sine wave & quadratic Bezier for realistic turn-by-turn road curves
-            $curveFactor = 4 * $t * (1 - $t) + sin($t * M_PI * 3) * 0.15;
+            // Combined sine wave & quadratic Bezier for distinct turn-by-turn road curves
+            $curveFactor = 4 * $t * (1 - $t) + sin($t * M_PI * 2) * 0.25;
             $lat = $start['lat'] + $t * $dLat + $perpLat * $curveFactor;
             $lng = $start['lng'] + $t * $dLng + $perpLng * $curveFactor;
 
