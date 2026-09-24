@@ -7,6 +7,7 @@ use App\Models\SecurityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -25,7 +26,7 @@ class AuthController extends Controller
      * - Anti-Bot Honeypot Trap
      * - Rate Limiting & Brute-Force Lockout (3 Failed Attempts Threshold)
      * - Bcrypt Hash Verification
-     * - Session Fixation Regeneration
+     * - 2-Factor OTP Verification Dispatch
      * - Security Audit Trail Logging
      */
     public function login(Request $request)
@@ -77,33 +78,35 @@ class AuthController extends Controller
         $user = User::where('email', $email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            // Clear brute-force rate limiter on success
+            // Clear brute-force rate limiter on password verification
             RateLimiter::clear($throttleKey);
 
-            // Session Fixation Defense: Regenerate session ID
-            $request->session()->regenerate();
-
-            $userRole = $user->role ?: 'admin';
+            // Generate 6-digit OTP Code
+            $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+            $targetEmail = env('DEMO_OTP_EMAIL') ?: $user->email;
 
             session([
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'user_email' => $user->email,
-                'user_role' => $userRole,
+                'otp_pending_user_id' => $user->id,
+                'otp_code' => $otpCode,
+                'otp_expires_at' => now()->addMinutes(10)->timestamp,
+                'otp_target_email' => $targetEmail,
             ]);
 
-            SecurityLog::create([
-                'event_type' => 'successful_login',
-                'email' => $email,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'details' => "Successful login session initiated for role: {$userRole}",
-            ]);
+            // Dispatch OTP Email
+            try {
+                Mail::raw(
+                    "Your Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.",
+                    function ($message) use ($targetEmail) {
+                        $message->to($targetEmail)
+                                ->subject("🔐 {$otpCode} - Hirna Security Verification Code");
+                    }
+                );
+                Log::info("OTP DISPATCH SUCCESS: Code {$otpCode} dispatched to {$targetEmail}");
+            } catch (\Exception $e) {
+                Log::error("OTP DISPATCH FAILED: " . $e->getMessage());
+            }
 
-            Log::info("SECURITY AUDIT: Successful login for {$email} ({$userRole}) from IP {$request->ip()}");
-
-            $roleTitle = ucwords(str_replace('_', ' ', $userRole));
-            return redirect()->route('dashboard')->with('success', "Signed in as {$user->name} ({$roleTitle}).");
+            return redirect()->route('otp.show')->with('success', "A 6-digit verification code has been sent to {$targetEmail}.");
         }
 
         // 5. Failed Login Attempt: Record Strike in RateLimiter
@@ -125,6 +128,119 @@ class AuthController extends Controller
         }
 
         return back()->with('error', "Invalid password or email address. You have {$attemptsLeft} attempt(s) remaining before temporary lockout.");
+    }
+
+    /**
+     * Display the 2-factor OTP verification screen.
+     */
+    public function showOtp()
+    {
+        if (!session()->has('otp_pending_user_id')) {
+            return redirect()->route('login');
+        }
+
+        return view('auth.verify-otp');
+    }
+
+    /**
+     * Verify submitted 6-digit OTP code.
+     */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:6',
+        ], [
+            'otp.required' => 'Please enter the 6-digit verification code.',
+            'otp.size' => 'Verification code must be exactly 6 digits.',
+        ]);
+
+        if (!session()->has('otp_pending_user_id') || !session()->has('otp_code')) {
+            return redirect()->route('login')->with('error', 'Verification session expired. Please sign in again.');
+        }
+
+        if (now()->timestamp > session('otp_expires_at')) {
+            return back()->with('error', 'Verification code has expired. Please click "Resend OTP Code".');
+        }
+
+        if (trim($request->otp) !== session('otp_code')) {
+            return back()->with('error', 'Invalid verification code. Please check your email and try again.');
+        }
+
+        // OTP Verification Successful -> Grant Full Authenticated Session
+        $userId = session('otp_pending_user_id');
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User account not found.');
+        }
+
+        $request->session()->regenerate();
+
+        $userRole = $user->role ?: 'admin';
+
+        session([
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'user_role' => $userRole,
+        ]);
+
+        // Clean up OTP session state
+        session()->forget(['otp_pending_user_id', 'otp_code', 'otp_expires_at', 'otp_target_email']);
+
+        SecurityLog::create([
+            'event_type' => 'successful_login',
+            'email' => $user->email,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => "Successful 2FA OTP login session initiated for role: {$userRole}",
+        ]);
+
+        Log::info("SECURITY AUDIT: Successful OTP 2FA login for {$user->email} ({$userRole}) from IP {$request->ip()}");
+
+        $roleTitle = ucwords(str_replace('_', ' ', $userRole));
+        return redirect()->route('dashboard')->with('success', "Two-factor verification successful! Signed in as {$user->name} ({$roleTitle}).");
+    }
+
+    /**
+     * Resend 6-digit OTP code to registered/demo email.
+     */
+    public function resendOtp(Request $request)
+    {
+        if (!session()->has('otp_pending_user_id')) {
+            return redirect()->route('login');
+        }
+
+        $userId = session('otp_pending_user_id');
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User session invalid.');
+        }
+
+        $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        $targetEmail = env('DEMO_OTP_EMAIL') ?: $user->email;
+
+        session([
+            'otp_code' => $otpCode,
+            'otp_expires_at' => now()->addMinutes(10)->timestamp,
+            'otp_target_email' => $targetEmail,
+        ]);
+
+        try {
+            Mail::raw(
+                "Your new Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.",
+                function ($message) use ($targetEmail) {
+                    $message->to($targetEmail)
+                            ->subject("🔐 {$otpCode} - New Hirna Security Verification Code");
+                }
+            );
+            Log::info("OTP RESENT: Code {$otpCode} sent to {$targetEmail}");
+            return back()->with('success', "A new 6-digit verification code has been sent to {$targetEmail}.");
+        } catch (\Exception $e) {
+            Log::error("OTP RESEND MAIL FAILED: " . $e->getMessage());
+            return back()->with('error', "Failed to dispatch email: " . $e->getMessage());
+        }
     }
 
 

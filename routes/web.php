@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 // Authentication Routes (Public)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::get('/verify-otp', [AuthController::class, 'showOtp'])->name('otp.show');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('otp.verify');
+Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('otp.resend');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // All Protected Internal Routes (Require Active Login Session)
