@@ -55,38 +55,44 @@ class AuthController extends Controller
         ]);
 
         $rawInput = trim(Str::lower($request->input('email')));
-        $cleanInput = str_replace([' ', '_', '-'], '', $rawInput);
-        $throttleKey = Str::transliterate($cleanInput . '|' . $request->ip());
+        $cleanInput = str_replace([' ', '_', '-', '@', '.'], '', $rawInput);
+
+        // 3. Flexible Database User Records Lookup (Email, Clean Username, or Display Name)
+        $user = User::where('email', $rawInput)
+            ->orWhere('email', $cleanInput)
+            ->orWhereRaw("LOWER(REPLACE(email, ' ', '')) = ?", [$cleanInput])
+            ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$cleanInput])
+            ->first();
+
+        // Standardized Lockout Key: Bind to canonical user ID if account exists, or clean input
+        $accountKey = $user ? 'user_' . $user->id : 'input_' . $cleanInput;
+        $throttleKey = Str::transliterate("login_lockout:{$accountKey}|" . $request->ip());
         $maxAttempts = 3; // Strict 3 Failed Attempts Lockout Threshold
 
-        // 3. Check Rate Limiter Lockout (Max 3 Attempts for all accounts)
+        // 4. Check Rate Limiter Lockout (Max 3 Attempts for all accounts)
         if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             
             SecurityLog::create([
                 'event_type' => 'account_lockout',
-                'email' => $rawInput,
+                'email' => $user ? $user->email : $rawInput,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'details' => "Account locked out for {$seconds} seconds due to 3 consecutive failed login attempts",
             ]);
             
-            Log::warning("SECURITY LOCKOUT: IP {$request->ip()} locked out on {$rawInput}");
+            Log::warning("SECURITY LOCKOUT: IP {$request->ip()} locked out on account " . ($user ? $user->email : $rawInput));
             
             return back()->with('error', "🚨 Security Lockout: Too many failed login attempts (3/3). Your account has been temporarily locked for {$seconds} seconds.");
         }
 
-        // 4. Authenticate Against Database User Records Flexible Lookup (Email, Clean Username, or Display Name)
-        $user = User::where('email', $rawInput)
-            ->orWhere('email', $cleanInput)
-            ->orWhereRaw("LOWER(REPLACE(email, ' ', '')) = ?", [$cleanInput])
-            ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$cleanInput])
-            ->orWhereRaw("LOWER(email) LIKE ?", ["%{$cleanInput}%"])
-            ->first();
-
         if ($user && Hash::check($request->password, $user->password)) {
-            // Clear brute-force rate limiter on password verification
+            // Clear brute-force rate limiter on successful password verification
             RateLimiter::clear($throttleKey);
+            if ($user) {
+                RateLimiter::clear(Str::transliterate("login_lockout:user_{$user->id}|" . $request->ip()));
+                RateLimiter::clear(Str::transliterate("login_lockout:input_{$cleanInput}|" . $request->ip()));
+            }
 
             // Server-side check: Has user successfully verified OTP within the last 50 minutes?
             $isOtpVerifiedWithin50Min = $user->last_otp_verified_at 
@@ -152,13 +158,13 @@ class AuthController extends Controller
 
         SecurityLog::create([
             'event_type' => 'failed_login',
-            'email' => $rawInput,
+            'email' => $user ? $user->email : $rawInput,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'details' => "Failed authentication attempt with invalid password. {$attemptsLeft} attempts remaining.",
         ]);
 
-        Log::warning("SECURITY ALERT: Failed login attempt for {$rawInput} from IP {$request->ip()}. {$attemptsLeft} attempts remaining.");
+        Log::warning("SECURITY ALERT: Failed login attempt for " . ($user ? $user->email : $rawInput) . " from IP {$request->ip()}. {$attemptsLeft} attempts remaining.");
 
         if ($attemptsLeft <= 0) {
             return back()->with('error', "🚨 Security Lockout: 3 failed login attempts reached! Your account/IP has been temporarily locked for 60 seconds.");

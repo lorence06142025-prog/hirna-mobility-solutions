@@ -35,16 +35,23 @@ class SecurityController extends Controller
         // Dynamically evaluate lockout status for each user account
         $users = $allUsers->map(function ($usr) {
             $email = Str::lower($usr->email);
+            $cleanInput = str_replace([' ', '_', '-', '@', '.'], '', $email);
+
+            $keyUser = Str::transliterate("login_lockout:user_{$usr->id}|" . request()->ip());
+            $keyUserLocal = Str::transliterate("login_lockout:user_{$usr->id}|127.0.0.1");
+            $keyInput = Str::transliterate("login_lockout:input_{$cleanInput}|" . request()->ip());
             $key1 = Str::transliterate($email . '|' . request()->ip());
-            $key2 = Str::transliterate($email . '|127.0.0.1');
-            $key3 = Str::transliterate($email);
 
+            $attemptsUser = RateLimiter::attempts($keyUser);
+            $attemptsUserLocal = RateLimiter::attempts($keyUserLocal);
+            $attemptsInput = RateLimiter::attempts($keyInput);
             $attempts1 = RateLimiter::attempts($key1);
-            $attempts2 = RateLimiter::attempts($key2);
-            $attempts3 = RateLimiter::attempts($key3);
 
-            $maxAttempts = max($attempts1, $attempts2, $attempts3);
-            $isLocked = RateLimiter::tooManyAttempts($key1, 3) || RateLimiter::tooManyAttempts($key2, 3) || RateLimiter::tooManyAttempts($key3, 3);
+            $maxAttempts = max($attemptsUser, $attemptsUserLocal, $attemptsInput, $attempts1);
+            $isLocked = RateLimiter::tooManyAttempts($keyUser, 3) 
+                || RateLimiter::tooManyAttempts($keyUserLocal, 3) 
+                || RateLimiter::tooManyAttempts($keyInput, 3) 
+                || RateLimiter::tooManyAttempts($key1, 3);
 
             // Also check latest audit log for un-cleared lockout
             $lastLog = SecurityLog::where('email', $email)->latest()->first();
@@ -138,10 +145,16 @@ class SecurityController extends Controller
         ]);
 
         $email = trim(Str::lower($request->email));
+        $cleanInput = str_replace([' ', '_', '-', '@', '.'], '', $email);
         $clientIp = trim($request->ip_address ?? $request->ip());
+
+        $usr = User::where('email', $email)->orWhereRaw("LOWER(REPLACE(email, ' ', '')) = ?", [$cleanInput])->first();
 
         // Clear all rate limiter key variations for guaranteed lockout removal
         $keysToClear = [
+            Str::transliterate("login_lockout:input_{$cleanInput}|" . $clientIp),
+            Str::transliterate("login_lockout:input_{$cleanInput}|127.0.0.1"),
+            Str::transliterate("login_lockout:input_{$cleanInput}|" . $request->ip()),
             Str::transliterate($email . '|' . $clientIp),
             Str::transliterate($email . '|127.0.0.1'),
             Str::transliterate($email . '|' . $request->ip()),
@@ -150,6 +163,12 @@ class SecurityController extends Controller
             '127.0.0.1',
             $request->ip(),
         ];
+
+        if ($usr) {
+            $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|" . $clientIp);
+            $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|127.0.0.1");
+            $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|" . $request->ip());
+        }
 
         foreach ($keysToClear as $k) {
             if (!empty($k)) {
