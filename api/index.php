@@ -25,22 +25,25 @@ try {
         }
     }
 
-    // 2. Load Composer Autoloader & Bootstrap Laravel Environment
+    // 2. Load Composer Autoloader & Create Application Instance
     require_once __DIR__ . '/../vendor/autoload.php';
 
     /** @var \Illuminate\Foundation\Application $app */
     $app = require __DIR__ . '/../bootstrap/app.php';
 
-    // Set storage & bootstrap cache paths to writable /tmp directories in serverless environment
+    // Set storage & bootstrap paths to writable /tmp directories in serverless environment
     $app->useStoragePath($tmpStorage);
     $app->useBootstrapPath($tmpBootstrap);
 
-    // Bootstrap HTTP Kernel so Facades (DB, Log, Artisan, Schema) are registered
+    // 3. Capture HTTP Request and bind into container BEFORE Kernel bootstrap
+    $request = Request::capture();
+    $app->instance('request', $request);
+
+    // 4. Bootstrap HTTP Kernel so Facades and base bindings are active
     $kernel = $app->make(Kernel::class);
     $kernel->bootstrap();
 
-    // 3. Test & Validate Active Database Connection
-    $dbConnected = false;
+    // 5. Test & Validate Database Connection & Safe Fallback
     try {
         $currentDefault = config('database.default');
         $connDriver = config("database.connections.{$currentDefault}.driver", $currentDefault);
@@ -50,7 +53,6 @@ try {
         }
 
         \Illuminate\Support\Facades\DB::connection()->getPdo();
-        $dbConnected = true;
         config(['cache.default' => 'database']);
     } catch (\Throwable $e) {
         // If primary DB connection fails (missing driver or unreachable DB), fallback safely to /tmp SQLite
@@ -66,7 +68,7 @@ try {
         config(['cache.default' => 'array']);
     }
 
-    // 4. Safe Non-Destructive Schema Migration Bootstrapping
+    // 6. Safe Non-Destructive Schema Migration Bootstrapping
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
@@ -77,8 +79,7 @@ try {
         \Illuminate\Support\Facades\Log::error("DB MIGRATION BOOTSTRAP EXCEPTION: " . $e->getMessage());
     }
 
-    // 5. Handle Serverless HTTP Request directly using the bootstrapped application instance
-    $request = Request::capture();
+    // 7. Handle Serverless HTTP Request and send response
     $response = $kernel->handle($request);
     $response->send();
     $kernel->terminate($request, $response);
