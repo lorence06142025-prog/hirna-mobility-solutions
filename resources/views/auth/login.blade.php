@@ -313,10 +313,10 @@
                     <input type="text" name="hirna_security_hp" style="display:none !important; position:absolute !important; left:-9999px !important;" tabindex="-1" autocomplete="off">
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-white">Email Address</label>
+                        <label class="form-label small fw-bold text-white">Username or Email</label>
                         <div class="input-group">
-                            <span class="input-group-text border-end-0 text-white"><i class="bi bi-envelope text-warning"></i></span>
-                            <input type="email" id="emailInput" name="email" class="form-control border-start-0 text-white fw-medium" value="{{ old('email') }}" required placeholder="name@hirna.ph" autocomplete="username">
+                            <span class="input-group-text border-end-0 text-white"><i class="bi bi-person-badge text-warning"></i></span>
+                            <input type="text" id="emailInput" name="email" class="form-control border-start-0 text-white fw-medium" value="{{ old('email') }}" required placeholder="hirna admin" autocomplete="username">
                         </div>
                     </div>
 

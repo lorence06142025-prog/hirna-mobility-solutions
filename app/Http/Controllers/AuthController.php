@@ -47,15 +47,16 @@ class AuthController extends Controller
 
         // 2. Validate Basic Form Structure First
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required|string',
         ], [
-            'email.required' => 'Please enter your account email address.',
+            'email.required' => 'Please enter your username or email address.',
             'password.required' => 'Please enter your password.',
         ]);
 
-        $email = trim(Str::lower($request->input('email')));
-        $throttleKey = Str::transliterate($email . '|' . $request->ip());
+        $rawInput = trim(Str::lower($request->input('email')));
+        $cleanInput = str_replace([' ', '_', '-'], '', $rawInput);
+        $throttleKey = Str::transliterate($cleanInput . '|' . $request->ip());
         $maxAttempts = 3; // Strict 3 Failed Attempts Lockout Threshold
 
         // 3. Check Rate Limiter Lockout (Max 3 Attempts for all accounts)
@@ -64,19 +65,24 @@ class AuthController extends Controller
             
             SecurityLog::create([
                 'event_type' => 'account_lockout',
-                'email' => $email,
+                'email' => $rawInput,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'details' => "Account locked out for {$seconds} seconds due to 3 consecutive failed login attempts",
             ]);
             
-            Log::warning("SECURITY LOCKOUT: IP {$request->ip()} locked out on {$email}");
+            Log::warning("SECURITY LOCKOUT: IP {$request->ip()} locked out on {$rawInput}");
             
             return back()->with('error', "🚨 Security Lockout: Too many failed login attempts (3/3). Your account has been temporarily locked for {$seconds} seconds.");
         }
 
-        // 4. Authenticate Against Database User Records Strictly
-        $user = User::where('email', $email)->first();
+        // 4. Authenticate Against Database User Records Flexible Lookup (Email, Clean Username, or Display Name)
+        $user = User::where('email', $rawInput)
+            ->orWhere('email', $cleanInput)
+            ->orWhereRaw("LOWER(REPLACE(email, ' ', '')) = ?", [$cleanInput])
+            ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$cleanInput])
+            ->orWhereRaw("LOWER(email) LIKE ?", ["%{$cleanInput}%"])
+            ->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
             // Clear brute-force rate limiter on password verification

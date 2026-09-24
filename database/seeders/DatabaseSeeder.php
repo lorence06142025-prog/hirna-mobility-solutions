@@ -19,35 +19,35 @@ class DatabaseSeeder extends Seeder
         // 1. Create Core Role Users
         $admin = User::create([
             'name' => 'Hirna System Admin',
-            'email' => 'admin@hirna.ph',
+            'email' => 'hirna admin',
             'password' => Hash::make('Password@123'),
             'role' => 'admin',
         ]);
 
         $fleetManager = User::create([
             'name' => 'Alex Fleet Manager',
-            'email' => 'fleetmanager@hirna.ph',
+            'email' => 'hirna fleet',
             'password' => Hash::make('Password@123'),
             'role' => 'fleet_manager',
         ]);
 
         $dispatcher = User::create([
             'name' => 'Sarah Dispatcher',
-            'email' => 'dispatcher@hirna.ph',
+            'email' => 'hirna dispatcher',
             'password' => Hash::make('Password@123'),
             'role' => 'dispatcher',
         ]);
 
         $finance = User::create([
             'name' => 'Marcus Finance Officer',
-            'email' => 'finance@hirna.ph',
+            'email' => 'hirna finance',
             'password' => Hash::make('Password@123'),
             'role' => 'finance',
         ]);
 
         $operations = User::create([
             'name' => 'Elena Operations Manager',
-            'email' => 'operations@hirna.ph',
+            'email' => 'hirna operations',
             'password' => Hash::make('Password@123'),
             'role' => 'operations',
         ]);
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
         $driverModels = [];
 
         foreach ($driverNames as $index => $name) {
-            $email = 'driver' . ($index + 1) . '@hirna.ph';
+            $email = 'driver ' . ($index + 1);
             $user = User::create([
                 'name' => $name,
                 'email' => $email,
