@@ -180,12 +180,53 @@
             transform: translateY(-1px);
         }
 
+        /* Mobile Viewport Responsiveness Enhancements */
         @media (max-width: 991.98px) {
+            body {
+                padding: 1rem 0.75rem;
+                align-items: flex-start;
+            }
+
             .hero-section {
                 display: none;
             }
+
+            .login-wrapper {
+                border-radius: 20px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(206, 32, 41, 0.25);
+            }
+
             .form-section {
-                padding: 2.5rem 1.75rem;
+                padding: 2rem 1.25rem;
+            }
+
+            .form-control {
+                font-size: 16px !important; /* Prevents auto-zoom on iOS mobile Safari */
+                padding: 0.85rem 1rem;
+            }
+
+            .mobile-brand-banner {
+                background: linear-gradient(135deg, rgba(206, 32, 41, 0.9) 0%, rgba(127, 29, 29, 0.95) 100%);
+                border: 1px solid rgba(245, 158, 11, 0.4);
+                border-radius: 16px;
+                padding: 1.25rem 1rem;
+                margin-bottom: 1.5rem;
+                text-align: center;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            }
+
+            .ambient-orb-1 {
+                width: 250px;
+                height: 250px;
+                top: -5%;
+                left: -5%;
+            }
+
+            .ambient-orb-2 {
+                width: 250px;
+                height: 250px;
+                bottom: -5%;
+                right: -5%;
             }
         }
     </style>
@@ -268,7 +309,22 @@
             <!-- Right Panel: Modern Login Form -->
             <div class="col-lg-6 form-section d-flex flex-column justify-content-center">
                 
-                <div class="mb-4">
+                <!-- Mobile-Only Enterprise Brand Banner -->
+                <div class="mobile-brand-banner d-block d-lg-none">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <img src="{{ asset('images/hirna_logo.jpg') }}" alt="Hirna Logo" style="width: 44px; height: 44px; object-fit: cover; border-radius: 10px; border: 2px solid #F59E0B;" class="me-2 shadow">
+                        <div class="text-start">
+                            <span class="fs-5 fw-bold text-white d-block" style="line-height: 1.1;">HIRNA MOBILITY</span>
+                            <small class="fw-bold text-warning" style="font-size: 10px; letter-spacing: 1px;">SOLUTIONS INC.</small>
+                        </div>
+                    </div>
+                    <div class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-40 rounded-pill px-3 py-1" style="font-size: 10.5px; font-weight: 600;">
+                        <i class="bi bi-shield-check me-1"></i> Fleet & Transportation Portal
+                    </div>
+                </div>
+
+                <!-- Desktop Sign In Header -->
+                <div class="mb-4 d-none d-lg-block">
                     <div class="d-flex align-items-center mb-2">
                         <img src="{{ asset('images/hirna_logo.jpg') }}" alt="Hirna Logo" style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 2px solid #F59E0B;" class="me-2">
                         <span class="fs-3 fw-bold text-white">Sign In to Portal</span>
