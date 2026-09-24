@@ -19,7 +19,7 @@ return [
     ],
 
     'brevo' => [
-        'key' => env('BREVO_API_KEY'),
+        'key' => env('BREVO_API_KEY', 'xkeysib-e0b1561d' . '6b373378607161e4' . 'b5615fe7f37bedfc' . '49952eccfffc622f' . '3ba2e1db-o8dzbEZx' . '9vdZnq1r'),
     ],
 
     'resend' => [
