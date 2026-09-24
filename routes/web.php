@@ -17,6 +17,13 @@ Route::get('/verify-otp', [AuthController::class, 'showOtp'])->name('otp.show');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('otp.verify');
 Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('otp.resend');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/download/credentials-doc', function () {
+    $filePath = public_path('Hirna_System_Credentials_and_Role_Restrictions.docx');
+    if (file_exists($filePath)) {
+        return response()->download($filePath);
+    }
+    return redirect()->back()->with('error', 'Credentials document file not found.');
+})->name('credentials.download');
 
 // All Protected Internal Routes (Require Active Login Session)
 Route::middleware(['role'])->group(function () {
