@@ -152,7 +152,7 @@ class TripController extends Controller
      */
     public function startTrip(Trip $trip)
     {
-        $trip->update(['status' => 'active', 'started_at' => now()]);
+        $trip->update(['status' => 'active', 'start_time' => now()]);
         return redirect()->back()->with('success', 'Trip is now active and live telemetry tracking is enabled.');
     }
 
@@ -170,7 +170,7 @@ class TripController extends Controller
             'status' => 'completed',
             'actual_fuel_liters' => $validated['actual_fuel_liters'],
             'actual_duration_minutes' => $validated['actual_duration_minutes'],
-            'completed_at' => now(),
+            'end_time' => now(),
         ]);
 
         // Calculate continuous cumulative odometer reading
@@ -243,8 +243,8 @@ class TripController extends Controller
             'vehicle_id' => $vehicle ? $vehicle->id : 1,
             'driver_id' => $driver ? $driver->id : 1,
             'status' => 'completed',
-            'started_at' => now()->subMinutes($validated['actual_duration_minutes']),
-            'completed_at' => now(),
+            'start_time' => now()->subMinutes($validated['actual_duration_minutes']),
+            'end_time' => now(),
         ]);
 
         if ($vehicle) {
@@ -283,12 +283,11 @@ class TripController extends Controller
 
         $tripLog = TripLog::create([
             'trip_id' => $trip->id,
-            'current_lat' => $validated['lat'],
-            'current_lng' => $validated['lng'],
-            'current_speed' => $validated['speed'],
-            'idle_duration_seconds' => $validated['idle_seconds'] ?? 0,
-            'is_harsh_braking' => $validated['is_harsh_braking'] ?? false,
-            'recorded_at' => now(),
+            'lat' => $validated['lat'],
+            'lng' => $validated['lng'],
+            'speed_kmh' => $validated['speed'],
+            'idle_time_seconds' => $validated['idle_seconds'] ?? 0,
+            'timestamp' => now(),
         ]);
 
         // Calculate real-time safety score deduction

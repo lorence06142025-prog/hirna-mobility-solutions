@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Vehicle;
 use App\Models\FuelLog;
 use App\Models\Trip;
-use App\Models\Reservation;
+use App\Models\VehicleReservation;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ImportController extends Controller
@@ -87,12 +89,20 @@ class ImportController extends Controller
                     case 'reservations':
                         // Columns: Title/Purpose, Vehicle ID/Plate, Start Date, End Date
                         $vehicle = Vehicle::first();
-                        Reservation::create([
-                            'title' => trim($row[0] ?? 'Executive Dispatch'),
-                            'vehicle_id' => $vehicle ? $vehicle->id : 1,
-                            'user_id' => session('user_id', 1),
-                            'start_time' => trim($row[2] ?? now()->toDateTimeString()),
-                            'end_time' => trim($row[3] ?? now()->addHours(2)->toDateTimeString()),
+                        $requestedBy = User::where('role', 'admin')->first();
+                        if (!$vehicle || !$requestedBy) {
+                            break;
+                        }
+
+                        $start = Carbon::parse($row[2] ?? now());
+                        $end = Carbon::parse($row[3] ?? now()->addHours(2));
+                        VehicleReservation::create([
+                            'purpose' => trim($row[0] ?? 'Executive Dispatch'),
+                            'vehicle_id' => $vehicle->id,
+                            'requested_by' => session('user_id', $requestedBy->id),
+                            'reservation_date' => $start->toDateString(),
+                            'start_time' => $start->toTimeString(),
+                            'end_time' => $end->toTimeString(),
                             'status' => 'approved',
                         ]);
                         $importedCount++;

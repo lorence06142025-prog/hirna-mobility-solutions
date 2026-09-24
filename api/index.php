@@ -43,7 +43,7 @@ try {
     $kernel = $app->make(Kernel::class);
     $kernel->bootstrap();
 
-    // 5. Test & Validate Database Connection & Safe Fallback
+    // 5. Test and validate the configured PostgreSQL connection.
     try {
         $currentDefault = config('database.default');
         $connDriver = config("database.connections.{$currentDefault}.driver", $currentDefault);
@@ -53,33 +53,11 @@ try {
         }
 
         \Illuminate\Support\Facades\DB::connection()->getPdo();
-        config(['cache.default' => 'database']);
     } catch (\Throwable $e) {
-        // If primary DB connection fails (missing driver or unreachable DB), fallback safely to /tmp SQLite
-        \Illuminate\Support\Facades\Log::warning("PRIMARY DB CONNECT FAILED: " . $e->getMessage() . ". Falling back to local SQLite.");
-        
-        $dbFile = '/tmp/database.sqlite';
-        if (!file_exists($dbFile)) {
-            @touch($dbFile);
-        }
-        
-        config(['database.default' => 'sqlite']);
-        config(['database.connections.sqlite.database' => $dbFile]);
-        config(['cache.default' => 'array']);
+        throw new \RuntimeException('Configured Supabase PostgreSQL connection failed.', 0, $e);
     }
 
-    // 6. Safe Non-Destructive Schema Migration Bootstrapping
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
-        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        }
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::error("DB MIGRATION BOOTSTRAP EXCEPTION: " . $e->getMessage());
-    }
-
-    // 7. Handle Serverless HTTP Request and send response
+    // 6. Handle the serverless HTTP request and send the response.
     $response = $kernel->handle($request);
     $response->send();
     $kernel->terminate($request, $response);

@@ -18,6 +18,7 @@ database/*.sqlite
 /public/build
 /public/hot
 /public/storage
+/supabase/.temp
 /storage/*.key
 /storage/pail
 /vendor
