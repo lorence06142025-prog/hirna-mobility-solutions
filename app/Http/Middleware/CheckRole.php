@@ -21,6 +21,24 @@ class CheckRole
             return redirect()->route('login');
         }
 
+        // Enforce Idle Session Timeout (30 Minutes Inactivity Threshold)
+        $idleTimeout = config('session.idle_timeout', 1800);
+        $lastActivity = session('last_activity_time');
+
+        if ($lastActivity && (time() - $lastActivity > $idleTimeout)) {
+            session()->invalidate();
+            session()->regenerateToken();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Session expired due to inactivity.'], 401);
+            }
+
+            return redirect()->route('login')->with('error', '⏳ Session Timeout: You have been signed out due to 30 minutes of inactivity for security.');
+        }
+
+        // Update last activity timestamp on active request
+        session(['last_activity_time' => time()]);
+
         $userRole = session('user_role', 'admin');
 
         // Admin has full unrestricted access across all modules

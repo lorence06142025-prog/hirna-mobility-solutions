@@ -179,10 +179,10 @@
         </form>
 
         <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-30 text-white-50 small">
-            <form action="{{ route('otp.resend') }}" method="POST" class="d-inline">
+            <form action="{{ route('otp.resend') }}" method="POST" class="d-inline" id="resendForm">
                 @csrf
-                <button type="submit" class="btn btn-link p-0 text-warning text-decoration-none small fw-semibold">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Resend OTP Code
+                <button type="submit" id="resendBtn" class="btn btn-link p-0 text-white-50 text-decoration-none small fw-semibold" disabled>
+                    <i class="bi bi-clock-history me-1"></i> Resend Code in (60s)
                 </button>
             </form>
 
@@ -200,6 +200,33 @@
         const inputs = document.querySelectorAll('.otp-input');
         const form = document.getElementById('otpForm');
         const fullOtpInput = document.getElementById('fullOtpInput');
+        const resendBtn = document.getElementById('resendBtn');
+        const resendAvailableAt = {{ session('otp_resend_available_at', now()->addSeconds(60)->timestamp) }};
+
+        // 60-Second Resend Cooldown Countdown Timer
+        function updateResendTimer() {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const secondsLeft = Math.max(0, resendAvailableAt - nowSec);
+
+            if (secondsLeft > 0) {
+                resendBtn.disabled = true;
+                resendBtn.classList.add('text-white-50');
+                resendBtn.classList.remove('text-warning');
+                resendBtn.style.cursor = 'not-allowed';
+                resendBtn.innerHTML = `<i class="bi bi-clock-history me-1"></i> Resend Code in (${secondsLeft}s)`;
+                setTimeout(updateResendTimer, 1000);
+            } else {
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('text-white-50');
+                resendBtn.classList.add('text-warning');
+                resendBtn.style.cursor = 'pointer';
+                resendBtn.innerHTML = `<i class="bi bi-arrow-clockwise me-1"></i> Resend OTP Code`;
+            }
+        }
+
+        if (resendBtn) {
+            updateResendTimer();
+        }
 
         inputs.forEach((input, index) => {
             // Handle single character typing & auto focus

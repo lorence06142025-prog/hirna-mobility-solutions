@@ -97,6 +97,7 @@ class AuthController extends Controller
                 'otp_code' => $otpCode,
                 'otp_expires_at' => now()->addMinutes(10)->timestamp,
                 'otp_target_email' => $targetEmail,
+                'otp_resend_available_at' => now()->addSeconds(60)->timestamp,
             ]);
 
             // Dispatch Real OTP Email via Resend API / SMTP
@@ -213,15 +214,9 @@ class AuthController extends Controller
      */
     public function resendOtp(Request $request)
     {
-        if (!session()->has('otp_pending_user_id')) {
-            return redirect()->route('login');
-        }
-
-        $userId = session('otp_pending_user_id');
-        $user = User::find($userId);
-
-        if (!$user) {
-            return redirect()->route('login')->with('error', 'User session invalid.');
+        if (session()->has('otp_resend_available_at') && now()->timestamp < session('otp_resend_available_at')) {
+            $secondsLeft = session('otp_resend_available_at') - now()->timestamp;
+            return back()->with('error', "⏳ Please wait {$secondsLeft} second(s) before requesting a new verification code.");
         }
 
         $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
@@ -231,6 +226,7 @@ class AuthController extends Controller
             'otp_code' => $otpCode,
             'otp_expires_at' => now()->addMinutes(10)->timestamp,
             'otp_target_email' => $targetEmail,
+            'otp_resend_available_at' => now()->addSeconds(60)->timestamp,
         ]);
 
         try {
