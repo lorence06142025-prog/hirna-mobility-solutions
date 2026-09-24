@@ -126,7 +126,9 @@ class AuthController extends Controller
 
             // Generate 6-digit OTP Code if > 50 minutes or never verified
             $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-            $targetEmail = config('mail.demo_otp_email') ?: $user->email;
+            $targetEmail = filter_var($user->email, FILTER_VALIDATE_EMAIL) 
+                ? $user->email 
+                : (config('mail.demo_otp_email') ?: $user->email);
 
             session([
                 'otp_pending_user_id' => $user->id,
@@ -260,7 +262,14 @@ class AuthController extends Controller
         }
 
         $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-        $targetEmail = config('mail.demo_otp_email') ?: $user->email;
+        
+        $pendingUserId = session('otp_pending_user_id');
+        $user = $pendingUserId ? User::find($pendingUserId) : null;
+        $userEmail = $user ? $user->email : session('otp_target_email');
+
+        $targetEmail = filter_var($userEmail, FILTER_VALIDATE_EMAIL) 
+            ? $userEmail 
+            : (config('mail.demo_otp_email') ?: $userEmail);
 
         session([
             'otp_code' => $otpCode,
