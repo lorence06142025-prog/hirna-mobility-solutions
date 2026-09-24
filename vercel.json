@@ -24,12 +24,7 @@
   "env": {
     "APP_NAME": "Hirna Mobility Solutions",
     "APP_ENV": "production",
-    "APP_DEBUG": "true",
     "LOG_CHANNEL": "stderr",
-    "DB_CONNECTION": "sqlite",
-    "DB_DATABASE": "/tmp/database.sqlite",
-    "SESSION_DRIVER": "cookie",
-    "CACHE_STORE": "array",
     "VIEW_COMPILED_PATH": "/tmp/storage/framework/views",
     "APP_SERVICES_CACHE": "/tmp/bootstrap/cache/services.php",
     "APP_PACKAGES_CACHE": "/tmp/bootstrap/cache/packages.php",
