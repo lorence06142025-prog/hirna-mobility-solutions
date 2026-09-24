@@ -237,57 +237,19 @@ class AuthController extends Controller
     }
 
     /**
-     * Dispatch 6-digit OTP code to email address via Resend HTTP API (Primary) or SMTP (Fallback).
+     * Dispatch 6-digit OTP code to email address via Gmail SMTP.
      */
     protected function sendOtpEmail(string $targetEmail, string $otpCode): void
     {
-        $resendKey = config('services.resend.key') ?: env('RESEND_API_KEY');
-
-        // Priority 1: High-Speed Resend HTTPS API (Guaranteed delivery on Localhost & Vercel)
-        if ($resendKey) {
-            $response = Http::withToken($resendKey)
-                ->timeout(10)
-                ->post('https://api.resend.com/emails', [
-                    'from' => 'Hirna Mobility <onboarding@resend.dev>',
-                    'to' => [$targetEmail],
-                    'subject' => "🔐 {$otpCode} - Hirna Security Verification Code",
-                    'html' => "
-                        <div style='font-family: Arial, sans-serif; padding: 24px; background-color: #0F172A; color: #ffffff; border-radius: 16px; max-width: 480px; margin: 0 auto; border: 1px solid #F59E0B;'>
-                            <div style='text-align: center; margin-bottom: 20px;'>
-                                <h2 style='color: #ffffff; margin: 0; font-size: 22px;'>HIRNA MOBILITY SOLUTIONS</h2>
-                                <small style='color: #F59E0B; font-weight: bold; font-size: 11px; letter-spacing: 1px;'>OFFICIAL TNC FLEET PORTAL</small>
-                            </div>
-                            <p style='color: #CBD5E1; font-size: 14px;'>Hello,</p>
-                            <p style='color: #CBD5E1; font-size: 14px;'>Your 2-Factor Authentication security verification code is:</p>
-                            <div style='background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border: 2px solid #F59E0B; padding: 18px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #FDE047; margin: 20px 0;'>
-                                {$otpCode}
-                            </div>
-                            <p style='color: #94A3B8; font-size: 12px;'>This code is valid for <strong>10 minutes</strong>. If you did not request this login attempt, please ignore this email.</p>
-                            <hr style='border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;'>
-                            <div style='text-align: center; color: #64748B; font-size: 11px;'>
-                                Hirna Mobility Solutions Inc. &bull; Enterprise Fleet Portal
-                            </div>
-                        </div>
-                    ",
-                ]);
-
-            if ($response->successful()) {
-                Log::info("RESEND API OTP DISPATCH SUCCESS: Code {$otpCode} delivered to {$targetEmail} (ID: " . ($response->json('id') ?? 'N/A') . ")");
-                return;
-            }
-
-            Log::warning("RESEND API FAILED (Status {$response->status()}): " . $response->body() . ". Falling back to Mail facade.");
-        }
-
-        // Priority 2: Fallback to standard Mail facade / SMTP
         Mail::raw(
-            "Your Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.",
+            "Your Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this login attempt, please ignore this email.",
             function ($message) use ($targetEmail, $otpCode) {
                 $message->to($targetEmail)
+                        ->from('monterolorencemanuel@gmail.com', 'Hirna Mobility Solutions')
                         ->subject("🔐 {$otpCode} - Hirna Security Verification Code");
             }
         );
-        Log::info("SMTP OTP DISPATCH SUCCESS: Code {$otpCode} dispatched to {$targetEmail}");
+        Log::info("GMAIL SMTP OTP DISPATCH SUCCESS: Code {$otpCode} dispatched to {$targetEmail}");
     }
 
 
