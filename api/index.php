@@ -11,12 +11,14 @@ use Illuminate\Http\Request;
 try {
     // 1. Ensure required writable directories exist in /tmp for Vercel serverless environment
     $tmpStorage = '/tmp/storage';
+    $tmpBootstrap = '/tmp/bootstrap';
+    
     foreach ([
         $tmpStorage . '/framework/views',
         $tmpStorage . '/framework/sessions',
         $tmpStorage . '/framework/cache/data',
         $tmpStorage . '/logs',
-        '/tmp/bootstrap/cache',
+        $tmpBootstrap . '/cache',
     ] as $dir) {
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
@@ -29,8 +31,9 @@ try {
     /** @var \Illuminate\Foundation\Application $app */
     $app = require __DIR__ . '/../bootstrap/app.php';
 
-    // Set storage path to writable /tmp directory in serverless environment
+    // Set storage & bootstrap cache paths to writable /tmp directories in serverless environment
     $app->useStoragePath($tmpStorage);
+    $app->useBootstrapPath($tmpBootstrap);
 
     // Bootstrap HTTP Kernel so Facades (DB, Log, Artisan, Schema) are registered
     $kernel = $app->make(Kernel::class);
