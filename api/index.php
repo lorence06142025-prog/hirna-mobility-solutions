@@ -19,14 +19,27 @@ $_ENV['CACHE_STORE'] = 'database';
 $_SERVER['CACHE_STORE'] = 'database';
 putenv("CACHE_STORE=database");
 
-// Detect if External Cloud DB (Supabase / Postgres / MySQL) is configured via Vercel Environment Variables
-$externalConn = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? $_SERVER['DB_CONNECTION'] ?? null);
-$externalHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? null);
+// Check for external database configuration across all environment sources and .env file
+$envDbConn = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? $_SERVER['DB_CONNECTION'] ?? null);
+$envDbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? null);
 
-$isExternalDb = ($externalConn && $externalConn !== 'sqlite') || !empty($externalHost);
+if ((!$envDbHost || !$envDbConn) && file_exists(__DIR__ . '/../.env')) {
+    $envContent = @file_get_contents(__DIR__ . '/../.env');
+    if ($envContent) {
+        if (!$envDbHost && preg_match('/DB_HOST\s*=\s*(.+)/', $envContent, $mHost)) {
+            $envDbHost = trim($mHost[1], "\"' \r\n");
+        }
+        if (!$envDbConn && preg_match('/DB_CONNECTION\s*=\s*(.+)/', $envContent, $mConn)) {
+            $envDbConn = trim($mConn[1], "\"' \r\n");
+        }
+    }
+}
+
+$isExternalDb = ($envDbConn && strtolower($envDbConn) !== 'sqlite') 
+    || (!empty($envDbHost) && strtolower($envDbHost) !== '127.0.0.1' && strtolower($envDbHost) !== 'localhost');
 
 if (!$isExternalDb) {
-    // Fallback SQLite DB setup for local/demo serverless deployment
+    // Fallback SQLite DB setup for local/demo serverless deployment ONLY when no cloud DB is configured
     $sourceDb = __DIR__ . '/../database/database.sqlite';
     $dbFile = '/tmp/database.sqlite';
     $isNewDb = false;
@@ -62,12 +75,16 @@ if (!$isExternalDb) {
         }
     }
 } else {
-    // Run safe migrations & initial seed on external DB (Supabase) if tables do not exist yet
+    // External DB (Supabase PostgreSQL) is active - run safe non-destructive migration on first boot if needed
     try {
         require_once __DIR__ . '/../vendor/autoload.php';
         $setupApp = require __DIR__ . '/../bootstrap/app.php';
         $setupApp->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        
+        // Non-destructive schema migration (never drops existing tables or user records)
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        
+        // Seed initial roles ONLY if database has 0 user records
         if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
             \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         }
