@@ -25,6 +25,14 @@ Route::get('/download/credentials-doc', function () {
     return redirect()->back()->with('error', 'Credentials document file not found.');
 })->name('credentials.download');
 
+Route::get('/download/security-doc', function () {
+    $filePath = public_path('Hirna_System_Security_Documentation.docx');
+    if (file_exists($filePath)) {
+        return response()->download($filePath, 'Hirna_System_Security_Documentation.docx');
+    }
+    return redirect()->back()->with('error', 'Security documentation file not found.');
+})->name('security.download');
+
 // All Protected Internal Routes (Require Active Login Session)
 Route::middleware(['role'])->group(function () {
 
