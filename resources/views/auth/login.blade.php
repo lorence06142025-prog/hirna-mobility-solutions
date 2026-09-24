@@ -217,10 +217,6 @@
                     <h2 class="fw-extrabold text-white display-6 mb-3" style="letter-spacing: -0.03em;">
                         Fleet & Transportation Portal
                     </h2>
-                    
-                    <p class="text-slate-300 leading-relaxed mb-4" style="font-size: 0.95rem; color: #F1F5F9;">
-                        Client-based fleet management system with AI-based Gasoline (Gas), Diesel, and Electric fuel consumption prediction, live Leaflet GPS telematics, and transport cost analytics for Hirna Mobility Solutions Inc.
-                    </p>
 
                     <!-- Fleet Specifications Grid -->
                     <div class="row g-3 mt-2">
