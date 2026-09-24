@@ -24,6 +24,7 @@
   "env": {
     "APP_NAME": "Hirna Mobility Solutions",
     "APP_ENV": "production",
+    "APP_KEY": "base64:Si7TpMsNGYcjbLy7O5NJosGafRS33mu9xNlCtvMnXZo=",
     "LOG_CHANNEL": "stderr",
     "VIEW_COMPILED_PATH": "/tmp/storage/framework/views"
   }
