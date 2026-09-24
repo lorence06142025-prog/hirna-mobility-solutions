@@ -142,18 +142,10 @@
         </div>
 
         <h4 class="fw-bold text-white mb-2">Check Your Email</h4>
-        <p class="text-white-50 small mb-3">
+        <p class="text-white-50 small mb-4">
             We sent a 6-digit verification code to:<br>
             <strong class="text-warning fs-6">{{ session('otp_target_email', 'your email') }}</strong>
         </p>
-
-        @if(session('otp_code'))
-            <div class="mb-3 p-2 rounded-3 bg-dark bg-opacity-75 border border-warning border-opacity-40 text-warning small shadow-sm">
-                <i class="bi bi-key-fill me-1"></i> <strong>Defense Demo Security Key:</strong> 
-                <span class="badge bg-warning text-dark fs-6 font-monospace ms-1 px-2 py-1">{{ session('otp_code') }}</span>
-                <div class="text-white-50 mt-1" style="font-size: 11px;">(Dispatched via Gmail SMTP to {{ session('otp_target_email') }})</div>
-            </div>
-        @endif
 
         <!-- Flash messages -->
         @if(session('success'))

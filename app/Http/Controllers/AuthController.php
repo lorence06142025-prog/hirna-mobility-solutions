@@ -83,7 +83,7 @@ class AuthController extends Controller
 
             // Generate 6-digit OTP Code
             $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-            $targetEmail = env('DEMO_OTP_EMAIL') ?: $user->email;
+            $targetEmail = config('mail.demo_otp_email') ?: $user->email;
 
             session([
                 'otp_pending_user_id' => $user->id,
@@ -225,7 +225,7 @@ class AuthController extends Controller
         }
 
         $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-        $targetEmail = env('DEMO_OTP_EMAIL') ?: $user->email;
+        $targetEmail = config('mail.demo_otp_email') ?: $user->email;
 
         session([
             'otp_code' => $otpCode,

@@ -14,7 +14,9 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'smtp'),
+
+    'demo_otp_email' => env('DEMO_OTP_EMAIL', 'monterolorencemanuel@gmail.com'),
 
     /*
     |--------------------------------------------------------------------------
