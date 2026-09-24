@@ -119,9 +119,16 @@
                                         </button>
                                     </form>
                                 @endif
-                                <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1 fw-medium" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ $record->id }}" style="font-size: 11px;">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1 fw-medium" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ $record->id }}" style="font-size: 11px;">
                                     <i class="bi bi-pencil-square me-1"></i> Edit Details
                                 </button>
+                                <form action="{{ route('maintenance.destroy', $record) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this maintenance record?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1 fw-medium" style="font-size: 11px;" title="Delete Record">
+                                        <i class="bi bi-trash-fill me-1"></i> Delete
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

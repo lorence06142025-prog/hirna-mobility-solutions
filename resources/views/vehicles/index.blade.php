@@ -222,11 +222,16 @@
 
         <!-- PMS Maintenance Tab -->
         <div class="tab-pane fade" id="pms-pane" role="tabpanel" aria-labelledby="pms-tab" tabindex="0">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-wrench-adjustable text-primary me-2"></i> Vehicle Maintenance & Tune-up History</h6>
-                <button class="btn btn-sm btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#schedulePMSModal" onclick="openScheduleModal();">
-                    <i class="bi bi-plus-circle me-1"></i> Schedule Maintenance Service
-                </button>
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-wrench-adjustable text-danger me-2"></i> Vehicle Maintenance & Tune-up History</h6>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('maintenance.index') }}" class="btn btn-sm btn-danger rounded-3 fw-bold shadow-sm" style="background: #CE2029 !important;">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Open Full Maintenance Portal (/maintenance)
+                    </a>
+                    <button class="btn btn-sm btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#schedulePMSModal" onclick="openScheduleModal();">
+                        <i class="bi bi-plus-circle me-1"></i> Schedule Maintenance Service
+                    </button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -237,7 +242,7 @@
                             <th>SCHEDULED DATE</th>
                             <th>COST (PHP)</th>
                             <th>SERVICING STATUS</th>
-                            <th>SUPPLY CHAIN PR</th>
+                            <th class="text-end">ACTIONS & MANAGEMENT</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -248,33 +253,51 @@
                                     <small class="text-muted" style="font-size: 11px;">Plate: {{ $pms->vehicle->license_plate ?? 'N/A' }}</small>
                                 </td>
                                 <td><span class="badge bg-secondary">{{ $pms->service_type }}</span></td>
-                                <td>{{ $pms->scheduled_date }}</td>
+                                <td>{{ \Carbon\Carbon::parse($pms->scheduled_date)->toFormattedDateString() }}</td>
                                 <td class="fw-bold text-dark">₱{{ number_format($pms->cost ?? 1250, 2) }}</td>
                                 <td>
                                     <span class="badge rounded-pill {{ $pms->status === 'completed' ? 'bg-success' : ($pms->status === 'scheduled' ? 'bg-warning text-dark' : 'bg-primary') }}">
-                                        {{ ucfirst($pms->status) }}
+                                        {{ ucfirst(str_replace('_', ' ', $pms->status)) }}
                                     </span>
                                 </td>
-                                <td>
-                                    <span class="badge bg-info text-dark" style="font-size: 11px;"><i class="bi bi-cart-check me-1"></i> Team 6 PR Issued</span>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-1 flex-wrap">
+                                        @if($pms->status !== 'in_progress')
+                                            <form action="{{ route('maintenance.update-status', $pms) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="in_progress">
+                                                <input type="hidden" name="cost" value="{{ $pms->cost }}">
+                                                <button type="submit" class="btn btn-sm btn-warning text-dark rounded-2 px-2 py-1 fw-bold" style="font-size: 11px;">
+                                                    ⚙️ In Progress
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if($pms->status !== 'completed')
+                                            <form action="{{ route('maintenance.update-status', $pms) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="completed">
+                                                <input type="hidden" name="cost" value="{{ $pms->cost }}">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-2 px-2 py-1 fw-bold" style="font-size: 11px;">
+                                                    ✅ Complete
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('maintenance.index') }}" class="btn btn-sm btn-outline-primary rounded-2 px-2 py-1" style="font-size: 11px;">
+                                            <i class="bi bi-pencil-square me-1"></i> Edit
+                                        </a>
+                                        <form action="{{ route('maintenance.destroy', $pms) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this maintenance record?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" style="font-size: 11px;">
+                                                <i class="bi bi-trash-fill me-1"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td><strong class="d-block text-dark small">Hyundai Accent Hirna Taxi (TXI-9876)</strong></td>
-                                <td><span class="badge bg-secondary">Brake Pad & Battery Diagnostic</span></td>
-                                <td>2026-08-20</td>
-                                <td class="fw-bold text-dark">₱3,450.00</td>
-                                <td><span class="badge rounded-pill bg-warning text-dark">Scheduled</span></td>
-                                <td><span class="badge bg-info text-dark" style="font-size: 11px;"><i class="bi bi-cart-check me-1"></i> Team 6 PR Issued</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong class="d-block text-dark small">Toyota Vios Hirna Taxi (TXI-5421)</strong></td>
-                                <td><span class="badge bg-secondary">Tire Rotation & Coolant Flushing</span></td>
-                                <td>2026-08-14</td>
-                                <td class="fw-bold text-dark">₱1,800.00</td>
-                                <td><span class="badge rounded-pill bg-success">Completed</span></td>
-                                <td><span class="badge bg-info text-dark" style="font-size: 11px;"><i class="bi bi-cart-check me-1"></i> Team 6 PR Issued</span></td>
+                                <td colspan="6" class="text-center text-muted py-4">No maintenance records found. Click <strong>Schedule Maintenance Service</strong> or open <strong>/maintenance</strong>.</td>
                             </tr>
                         @endforelse
                     </tbody>

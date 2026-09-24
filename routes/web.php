@@ -94,6 +94,7 @@ Route::middleware(['role'])->group(function () {
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->middleware('role:admin,fleet_manager')->name('maintenance.index');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->middleware('role:admin,fleet_manager')->name('maintenance.store');
     Route::post('/maintenance/{record}/status', [MaintenanceController::class, 'updateStatus'])->middleware('role:admin,fleet_manager')->name('maintenance.update-status');
+    Route::delete('/maintenance/{record}', [MaintenanceController::class, 'destroy'])->middleware('role:admin,fleet_manager')->name('maintenance.destroy');
 
     // Route Planning & Optimization (Module 6) (Admin, Fleet Manager, Dispatcher, Operations)
     Route::get('/routes', [\App\Http\Controllers\RouteController::class, 'index'])->middleware('role:admin,fleet_manager,dispatcher,operations')->name('routes.index');

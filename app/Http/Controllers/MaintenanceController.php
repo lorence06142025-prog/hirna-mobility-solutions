@@ -74,4 +74,22 @@ class MaintenanceController extends Controller
         $statusLabel = ucfirst(str_replace('_', ' ', $validated['status']));
         return redirect()->back()->with('success', "Maintenance status updated to '{$statusLabel}'. Vehicle availability in Fleet Management updated accordingly.");
     }
+
+    public function destroy(MaintenanceRecord $record)
+    {
+        $vehicle = $record->vehicle;
+        $serviceType = $record->service_type;
+        $record->delete();
+
+        if ($vehicle && $vehicle->status === 'maintenance') {
+            $hasOtherMaintenance = MaintenanceRecord::where('vehicle_id', $vehicle->id)
+                ->where('status', 'in_progress')
+                ->exists();
+            if (!$hasOtherMaintenance) {
+                $vehicle->update(['status' => 'active']);
+            }
+        }
+
+        return redirect()->back()->with('success', "Maintenance record for '{$serviceType}' deleted successfully.");
+    }
 }
