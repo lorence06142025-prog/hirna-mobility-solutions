@@ -14,6 +14,11 @@ foreach ([
     }
 }
 
+// Force persistent database cache store for rate limiting across Vercel serverless lambda workers
+$_ENV['CACHE_STORE'] = 'database';
+$_SERVER['CACHE_STORE'] = 'database';
+putenv("CACHE_STORE=database");
+
 // Detect if External Cloud DB (Supabase / Postgres / MySQL) is configured via Vercel Environment Variables
 $externalConn = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? $_SERVER['DB_CONNECTION'] ?? null);
 $externalHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? null);
