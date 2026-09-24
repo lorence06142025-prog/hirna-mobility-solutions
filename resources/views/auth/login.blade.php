@@ -331,32 +331,12 @@
                                 <i class="bi bi-eye text-white" id="eyeIcon"></i>
                             </button>
                         </div>
-                        <!-- Strict Password Complexity Rule Checklist -->
-                        <div class="p-2 rounded-3 border border-secondary border-opacity-30 bg-dark bg-opacity-50" style="font-size: 11px;">
-                            <span class="d-block text-white-50 fw-bold mb-1"><i class="bi bi-shield-lock-fill text-warning me-1"></i> Enterprise Password Complexity Rule:</span>
-                            <div class="d-flex flex-wrap gap-2 text-white-50">
-                                <span><i class="bi bi-check-circle-fill text-warning"></i> 8+ Chars</span>
-                                <span><i class="bi bi-check-circle-fill text-warning"></i> 1 Capital [A-Z]</span>
-                                <span><i class="bi bi-check-circle-fill text-warning"></i> 1 Lowercase [a-z]</span>
-                                <span><i class="bi bi-check-circle-fill text-warning"></i> 1 Number [0-9]</span>
-                                <span><i class="bi bi-check-circle-fill text-warning"></i> 1 Special (@$!%*#?)</span>
-                            </div>
-                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-submit mb-3 fs-6 py-3 fw-bold">
                         <i class="bi bi-box-arrow-in-right me-2"></i> Access Hirna Portal
                     </button>
                 </form>
-
-                <!-- Security Assurance Banner (Zero Third-Party) -->
-                <div class="pt-3 border-top border-secondary border-opacity-30 text-center">
-                    <div class="d-flex justify-content-center align-items-center gap-3 text-white-50 small flex-wrap" style="font-size: 11.5px;">
-                        <span><i class="bi bi-shield-lock text-success me-1"></i> SSL 256-Bit TLS</span>
-                        <span><i class="bi bi-lightning-charge text-warning me-1"></i> Rate-Limited</span>
-                        <span><i class="bi bi-robot text-danger me-1"></i> Anti-Bot Honeypot</span>
-                    </div>
-                </div>
 
             </div>
         </div>
