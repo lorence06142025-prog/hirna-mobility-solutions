@@ -338,11 +338,16 @@
                                placeholder="e.g. Maria Clara Santos" 
                                required 
                                minlength="2" 
-                               maxlength="255">
+                               maxlength="50"
+                               style="text-transform: capitalize;"
+                               autocomplete="off">
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                            Min 2, max 50 chars. Auto-capitalized (e.g. Maria Clara Santos).
+                        </small>
                         @error('name')
                             <div class="invalid-feedback fw-semibold d-block">{{ $message }}</div>
                         @else
-                            <div class="invalid-feedback fw-semibold" id="nameJsError">Full Name is required (at least 2 characters).</div>
+                            <div class="invalid-feedback fw-semibold" id="nameJsError">Full Name is required (2 to 50 characters).</div>
                         @enderror
                     </div>
 
@@ -532,6 +537,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (nameInput) {
         nameInput.addEventListener('input', function () {
+            // Real-time Title Case Auto-Capitalization for each word
+            var cursorPos = this.selectionStart;
+            this.value = this.value.replace(/\b[a-z]/g, function (char) {
+                return char.toUpperCase();
+            });
+            this.setSelectionRange(cursorPos, cursorPos);
             validateNameInput(this);
         });
     }
@@ -601,10 +612,16 @@ document.addEventListener('DOMContentLoaded', function () {
         var val = input.value.trim();
         var nameErr = document.getElementById('nameJsError');
 
-        if (val.length < 2) {
+        if (val.length < 2 || val.length > 50) {
             input.classList.add('is-invalid');
             if (nameErr) {
-                nameErr.textContent = "Full Name is required (at least 2 characters).";
+                if (val.length === 0) {
+                    nameErr.textContent = "Full Name is required.";
+                } else if (val.length < 2) {
+                    nameErr.textContent = "Full Name must be at least 2 characters long.";
+                } else {
+                    nameErr.textContent = "Full Name must not exceed 50 characters (currently " + val.length + " chars).";
+                }
                 nameErr.style.display = 'block';
             }
             return false;

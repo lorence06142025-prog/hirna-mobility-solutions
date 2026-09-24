@@ -94,7 +94,7 @@ class SecurityController extends Controller
     public function storeUser(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|min:2|max:255',
+            'name' => 'required|string|min:2|max:50',
             'email' => [
                 'required',
                 'string',
@@ -123,6 +123,7 @@ class SecurityController extends Controller
         ], [
             'name.required' => 'Full Name is required.',
             'name.min' => 'Full Name must be at least 2 characters long.',
+            'name.max' => 'Full Name must not exceed 50 characters.',
             'email.required' => 'Username / Email Address is required.',
             'email.min' => 'Username / Email Address must be at least 3 characters long.',
             'email.max' => 'Username / Email Address must not exceed 30 characters.',
@@ -139,7 +140,7 @@ class SecurityController extends Controller
         ]);
 
         $user = User::create([
-            'name' => trim($validated['name']),
+            'name' => ucwords(Str::lower(trim($validated['name']))),
             'email' => trim(Str::lower($validated['email'])),
             'job_title' => $validated['job_title'] ? trim($validated['job_title']) : null,
             'phone_number' => trim($validated['phone_number']),
