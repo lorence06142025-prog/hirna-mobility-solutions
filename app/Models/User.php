@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'avatar_path',
         'job_title',
+        'last_otp_verified_at',
     ];
 
     /**
@@ -65,6 +66,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_otp_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

@@ -88,7 +88,37 @@ class AuthController extends Controller
             // Clear brute-force rate limiter on password verification
             RateLimiter::clear($throttleKey);
 
-            // Generate 6-digit OTP Code
+            // Server-side check: Has user successfully verified OTP within the last 50 minutes?
+            $isOtpVerifiedWithin50Min = $user->last_otp_verified_at 
+                && $user->last_otp_verified_at->gt(now()->subMinutes(50));
+
+            if ($isOtpVerifiedWithin50Min) {
+                // Skip OTP verification step - grant authenticated session immediately without updating last_otp_verified_at timestamp
+                $request->session()->regenerate();
+                $userRole = $user->role ?: 'admin';
+
+                session([
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'user_email' => $user->email,
+                    'user_role' => $userRole,
+                ]);
+
+                SecurityLog::create([
+                    'event_type' => 'successful_login',
+                    'email' => $user->email,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'details' => "Successful login (OTP bypassed: verified within 50 minutes) for role: {$userRole}",
+                ]);
+
+                Log::info("SECURITY AUDIT: Direct login (OTP 50-min window active) for {$user->email} ({$userRole})");
+
+                $roleTitle = ucwords(str_replace('_', ' ', $userRole));
+                return redirect()->route('dashboard')->with('success', "Welcome back, {$user->name}! Signed in as {$roleTitle} (OTP active from 50-min window).");
+            }
+
+            // Generate 6-digit OTP Code if > 50 minutes or never verified
             $otpCode = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
             $targetEmail = config('mail.demo_otp_email') ?: $user->email;
 
@@ -122,13 +152,13 @@ class AuthController extends Controller
 
         SecurityLog::create([
             'event_type' => 'failed_login',
-            'email' => $email,
+            'email' => $rawInput,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'details' => "Failed authentication attempt with invalid password. {$attemptsLeft} attempts remaining.",
         ]);
 
-        Log::warning("SECURITY ALERT: Failed login attempt for {$email} from IP {$request->ip()}. {$attemptsLeft} attempts remaining.");
+        Log::warning("SECURITY ALERT: Failed login attempt for {$rawInput} from IP {$request->ip()}. {$attemptsLeft} attempts remaining.");
 
         if ($attemptsLeft <= 0) {
             return back()->with('error', "🚨 Security Lockout: 3 failed login attempts reached! Your account/IP has been temporarily locked for 60 seconds.");
@@ -180,6 +210,10 @@ class AuthController extends Controller
         if (!$user) {
             return redirect()->route('login')->with('error', 'User account not found.');
         }
+
+        // Update server-side timestamp for 50-minute OTP window
+        $user->last_otp_verified_at = now();
+        $user->save();
 
         $request->session()->regenerate();
 
