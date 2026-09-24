@@ -29,15 +29,21 @@ $kernel->bootstrap();
 // 3. Test & Validate Active Database Connection
 $dbConnected = false;
 try {
+    $currentDefault = config('database.default');
+    $connDriver = config("database.connections.{$currentDefault}.driver", $currentDefault);
+    
+    if ($connDriver === 'pgsql' && !extension_loaded('pdo_pgsql')) {
+        throw new \RuntimeException("The pdo_pgsql PHP extension is not installed in this serverless runtime.");
+    }
+
     \Illuminate\Support\Facades\DB::connection()->getPdo();
     $dbConnected = true;
     config(['cache.default' => 'database']);
 } catch (\Throwable $e) {
-    // If primary cloud DB connection fails (e.g. driver missing or timeout), fallback safely to /tmp SQLite
+    // If primary DB connection fails (missing driver or unreachable DB), fallback safely to /tmp SQLite
     \Illuminate\Support\Facades\Log::warning("PRIMARY DB CONNECT FAILED: " . $e->getMessage() . ". Falling back to local SQLite.");
     
     $dbFile = '/tmp/database.sqlite';
-    $isNewDb = !file_exists($dbFile) || filesize($dbFile) === 0;
     if (!file_exists($dbFile)) {
         @touch($dbFile);
     }
