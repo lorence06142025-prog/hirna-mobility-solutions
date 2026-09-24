@@ -1,6 +1,11 @@
 <?php
 
-// Create required writable directories in /tmp for Vercel serverless environment
+/**
+ * Hirna Mobility Solutions - Vercel Serverless Application Entry Point
+ * Ensures production data persistence with Supabase PostgreSQL.
+ */
+
+// 1. Ensure required writable directories exist in /tmp for Vercel serverless environment
 $tmpStorage = '/tmp/storage';
 foreach ([
     $tmpStorage . '/framework/views',
@@ -14,85 +19,45 @@ foreach ([
     }
 }
 
-// Force persistent database cache store for rate limiting across Vercel serverless lambda workers
-$_ENV['CACHE_STORE'] = 'database';
-$_SERVER['CACHE_STORE'] = 'database';
-putenv("CACHE_STORE=database");
+// 2. Load Composer Autoloader & Bootstrap Laravel Environment to read Vercel env vars accurately
+require_once __DIR__ . '/../vendor/autoload.php';
 
-// Check for external database configuration across all environment sources and .env file
-$envDbConn = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? $_SERVER['DB_CONNECTION'] ?? null);
-$envDbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? null);
+$app = require __DIR__ . '/../bootstrap/app.php';
+$kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
 
-if ((!$envDbHost || !$envDbConn) && file_exists(__DIR__ . '/../.env')) {
-    $envContent = @file_get_contents(__DIR__ . '/../.env');
-    if ($envContent) {
-        if (!$envDbHost && preg_match('/DB_HOST\s*=\s*(.+)/', $envContent, $mHost)) {
-            $envDbHost = trim($mHost[1], "\"' \r\n");
-        }
-        if (!$envDbConn && preg_match('/DB_CONNECTION\s*=\s*(.+)/', $envContent, $mConn)) {
-            $envDbConn = trim($mConn[1], "\"' \r\n");
-        }
-    }
-}
+// 3. Inspect Authoritative Database Configuration
+$dbConn = config('database.default') ?: env('DB_CONNECTION');
+$dbHost = config("database.connections.{$dbConn}.host") ?: env('DB_HOST');
 
-$isExternalDb = ($envDbConn && strtolower($envDbConn) !== 'sqlite') 
-    || (!empty($envDbHost) && strtolower($envDbHost) !== '127.0.0.1' && strtolower($envDbHost) !== 'localhost');
+$isPersistentDb = ($dbConn && strtolower($dbConn) !== 'sqlite') 
+    || (!empty($dbHost) && strtolower($dbHost) !== '127.0.0.1' && strtolower($dbHost) !== 'localhost');
 
-if (!$isExternalDb) {
-    // Fallback SQLite DB setup for local/demo serverless deployment ONLY when no cloud DB is configured
-    $sourceDb = __DIR__ . '/../database/database.sqlite';
+if (!$isPersistentDb) {
+    // Fallback local SQLite setup ONLY if no cloud database (Supabase) is configured
     $dbFile = '/tmp/database.sqlite';
-    $isNewDb = false;
-
-    if (!file_exists($dbFile) || filesize($dbFile) === 0) {
-        if (file_exists($sourceDb) && filesize($sourceDb) > 0) {
-            @copy($sourceDb, $dbFile);
-        } else {
-            @touch($dbFile);
-            $isNewDb = true;
-        }
+    if (!file_exists($dbFile)) {
+        @touch($dbFile);
     }
-
-    $_ENV['DB_CONNECTION'] = 'sqlite';
-    $_ENV['DB_DATABASE'] = $dbFile;
-    $_SERVER['DB_CONNECTION'] = 'sqlite';
-    $_SERVER['DB_DATABASE'] = $dbFile;
-    putenv("DB_CONNECTION=sqlite");
-    putenv("DB_DATABASE={$dbFile}");
-
-    if ($isNewDb) {
-        try {
-            require_once __DIR__ . '/../vendor/autoload.php';
-            $setupApp = require __DIR__ . '/../bootstrap/app.php';
-            $setupApp->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-            if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            }
-            unset($setupApp);
-        } catch (\Throwable $e) {
-            // Silently pass
-        }
-    }
+    config(['database.default' => 'sqlite']);
+    config(['database.connections.sqlite.database' => $dbFile]);
 } else {
-    // External DB (Supabase PostgreSQL) is active - run safe non-destructive migration on first boot if needed
-    try {
-        require_once __DIR__ . '/../vendor/autoload.php';
-        $setupApp = require __DIR__ . '/../bootstrap/app.php';
-        $setupApp->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-        
-        // Non-destructive schema migration (never drops existing tables or user records)
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
-        // Seed initial roles ONLY if database has 0 user records
-        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        }
-        unset($setupApp);
-    } catch (\Throwable $e) {
-        // Silently pass
-    }
+    // Force database cache store so RateLimiter state is shared across serverless workers in Supabase
+    config(['cache.default' => 'database']);
 }
 
-// Forward serverless request to public/index.php
+// 4. Safe Non-Destructive Migration Bootstrapping
+try {
+    // Non-destructive schema migration (never drops existing tables or user records)
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    
+    // Initial seed ONLY executed if database has 0 user records
+    if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+    }
+} catch (\Throwable $e) {
+    // Silently continue if database schema is already up to date
+}
+
+// 5. Forward Serverless Request to public/index.php
 require __DIR__ . '/../public/index.php';
