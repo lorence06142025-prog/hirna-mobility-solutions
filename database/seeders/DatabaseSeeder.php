@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'hirna admin',
             'password' => Hash::make('Password@123'),
             'role' => 'admin',
+            'last_otp_verified_at' => now(),
         ]);
 
         $fleetManager = User::create([
@@ -29,6 +30,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'hirna fleet',
             'password' => Hash::make('Password@123'),
             'role' => 'fleet_manager',
+            'last_otp_verified_at' => now(),
         ]);
 
         $dispatcher = User::create([
@@ -36,6 +38,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'hirna dispatcher',
             'password' => Hash::make('Password@123'),
             'role' => 'dispatcher',
+            'last_otp_verified_at' => now(),
         ]);
 
         $finance = User::create([
@@ -43,6 +46,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'hirna finance',
             'password' => Hash::make('Password@123'),
             'role' => 'finance',
+            'last_otp_verified_at' => now(),
         ]);
 
         $operations = User::create([
@@ -50,6 +54,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'hirna operations',
             'password' => Hash::make('Password@123'),
             'role' => 'operations',
+            'last_otp_verified_at' => now(),
         ]);
 
         $driverNames = ['Juan Dela Cruz', 'Maria Santos', 'Jose Rizal', 'Pedro Penduko', 'Andres Bonifacio'];
@@ -63,6 +68,7 @@ class DatabaseSeeder extends Seeder
                 'email' => $email,
                 'password' => Hash::make('Password@123'),
                 'role' => 'driver',
+                'last_otp_verified_at' => now(),
             ]);
 
             $driverModels[] = Driver::create([

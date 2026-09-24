@@ -353,7 +353,17 @@ class AuthController extends Controller
         ];
 
         if (array_key_exists($role, $validRoles)) {
-            session(['user_role' => $role]);
+            $matchingUser = User::where('role', $role)->first();
+            if ($matchingUser) {
+                session([
+                    'user_id' => $matchingUser->id,
+                    'user_name' => $matchingUser->name,
+                    'user_email' => $matchingUser->email,
+                    'user_role' => $role,
+                ]);
+            } else {
+                session(['user_role' => $role]);
+            }
             Log::info("SECURITY AUDIT: Perspective switched to '{$role}' by user " . session('user_email'));
             return redirect()->back()->with('success', "Active perspective switched to: " . $validRoles[$role]);
         }

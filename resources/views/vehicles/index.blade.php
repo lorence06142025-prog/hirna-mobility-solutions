@@ -189,7 +189,7 @@
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <label class="form-label" style="font-weight: 500;">Battery Storage (kWh)</label>
+                                                        <label class="form-label" style="font-weight: 500;">Tank / Battery Capacity (Liters / kWh)</label>
                                                         <input type="number" name="fuel_capacity" value="{{ $vehicle->fuel_capacity }}" step="0.1" class="form-control rounded-3" required>
                                                     </div>
                                                     <div class="col-12">
@@ -426,15 +426,16 @@
                         <div class="col-md-6">
                             <label class="form-label" style="font-weight: 500;">Vehicle Category</label>
                             <select name="type" class="form-select rounded-3" required>
-                                <option value="Sedan" selected>Sedan (Nerio Green)</option>
-                                <option value="SUV">SUV (VF 8 / VF 9)</option>
-                                <option value="Crossover">Crossover (VF e34)</option>
-                                <option value="Hatchback">Compact (VF 5)</option>
+                                <option value="Taxi Sedan" selected>Taxi Sedan (Toyota Vios / Accent / Almera)</option>
+                                <option value="MPV / SUV">MPV / SUV (Toyota Innova / SUV)</option>
+                                <option value="Shuttle Van">Shuttle Van (Toyota HiAce)</option>
+                                <option value="Electric Vehicle (EV)">Electric Vehicle (EV - VinFast / Nerio Green)</option>
+                                <option value="Hirna Traysikel">Hirna Traysikel (3-Wheeler Transport)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" style="font-weight: 500;">Battery Storage (kWh)</label>
-                            <input type="number" name="fuel_capacity" placeholder="e.g. 42.0" step="0.1" class="form-control rounded-3" required>
+                            <label class="form-label" style="font-weight: 500;">Tank / Battery Capacity (Liters / kWh)</label>
+                            <input type="number" name="fuel_capacity" placeholder="e.g. 45.0" step="0.1" class="form-control rounded-3" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label" style="font-weight: 500;">Initial Status</label>

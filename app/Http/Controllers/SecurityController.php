@@ -23,11 +23,11 @@ class SecurityController extends Controller
         
         // Hirna Mobility official system role accounts
         $defaultUsers = collect([
-            (object)['id' => 1, 'name' => 'Hirna System Admin', 'email' => 'admin@hirna.ph', 'job_title' => 'Chief Technology Officer & Admin', 'role' => 'admin', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Hirna+System+Admin&background=CE2029&color=fff&size=128'],
-            (object)['id' => 2, 'name' => 'Alex Fleet Manager', 'email' => 'fleetmanager@hirna.ph', 'job_title' => 'Head of Fleet Operations', 'role' => 'fleet_manager', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Alex+Fleet+Manager&background=F59E0B&color=fff&size=128'],
-            (object)['id' => 3, 'name' => 'Sarah Dispatcher', 'email' => 'dispatcher@hirna.ph', 'job_title' => 'Lead Telematics Dispatcher', 'role' => 'dispatcher', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Sarah+Dispatcher&background=10B981&color=fff&size=128'],
-            (object)['id' => 4, 'name' => 'Marcus Finance Officer', 'email' => 'finance@hirna.ph', 'job_title' => 'Senior Financial Controller', 'role' => 'finance', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Marcus+Finance+Officer&background=3B82F6&color=fff&size=128'],
-            (object)['id' => 5, 'name' => 'Elena Operations Manager', 'email' => 'operations@hirna.ph', 'job_title' => 'Depot & Charging Operations Director', 'role' => 'operations', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Elena+Operations+Manager&background=8B5CF6&color=fff&size=128'],
+            (object)['id' => 1, 'name' => 'Hirna System Admin', 'email' => 'hirna admin', 'job_title' => 'Chief Technology Officer & Admin', 'role' => 'admin', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Hirna+System+Admin&background=CE2029&color=fff&size=128'],
+            (object)['id' => 2, 'name' => 'Alex Fleet Manager', 'email' => 'hirna fleet', 'job_title' => 'Head of Fleet Operations', 'role' => 'fleet_manager', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Alex+Fleet+Manager&background=F59E0B&color=fff&size=128'],
+            (object)['id' => 3, 'name' => 'Sarah Dispatcher', 'email' => 'hirna dispatcher', 'job_title' => 'Lead Telematics Dispatcher', 'role' => 'dispatcher', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Sarah+Dispatcher&background=10B981&color=fff&size=128'],
+            (object)['id' => 4, 'name' => 'Marcus Finance Officer', 'email' => 'hirna finance', 'job_title' => 'Senior Financial Controller', 'role' => 'finance', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Marcus+Finance+Officer&background=3B82F6&color=fff&size=128'],
+            (object)['id' => 5, 'name' => 'Elena Operations Manager', 'email' => 'hirna operations', 'job_title' => 'Depot & Charging Operations Director', 'role' => 'operations', 'status' => 'active', 'avatar_url' => 'https://ui-avatars.com/api/?name=Elena+Operations+Manager&background=8B5CF6&color=fff&size=128'],
         ]);
 
         $allUsers = $dbUsers->concat($defaultUsers)->unique('email');
