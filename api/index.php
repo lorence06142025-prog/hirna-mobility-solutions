@@ -15,10 +15,17 @@ foreach ([
 }
 
 // Auto-create SQLite DB in /tmp for Vercel serverless demo deployment
+$sourceDb = __DIR__ . '/../database/database.sqlite';
 $dbFile = '/tmp/database.sqlite';
-$isNewDb = !file_exists($dbFile) || filesize($dbFile) === 0;
-if (!file_exists($dbFile)) {
-    touch($dbFile);
+$isNewDb = false;
+
+if (!file_exists($dbFile) || filesize($dbFile) === 0) {
+    if (file_exists($sourceDb) && filesize($sourceDb) > 0) {
+        @copy($sourceDb, $dbFile);
+    } else {
+        @touch($dbFile);
+        $isNewDb = true;
+    }
 }
 
 // Force SQLite database connection in all PHP superglobals for Vercel
@@ -29,13 +36,21 @@ $_SERVER['DB_DATABASE'] = $dbFile;
 putenv("DB_CONNECTION=sqlite");
 putenv("DB_DATABASE={$dbFile}");
 
-// Run migration and seed BEFORE processing the HTTP request if DB is fresh
+// Run non-destructive migrations without dropping tables
 if ($isNewDb) {
     try {
         require_once __DIR__ . '/../vendor/autoload.php';
         $setupApp = require __DIR__ . '/../bootstrap/app.php';
         $setupApp->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-        \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
+        
+        // Never use migrate:fresh in serverless request bootstrapping as it wipes all user accounts & logs
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        
+        // Only run seeder if users table is completely empty
+        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        }
+        
         unset($setupApp);
     } catch (\Throwable $e) {
         // Silently pass
