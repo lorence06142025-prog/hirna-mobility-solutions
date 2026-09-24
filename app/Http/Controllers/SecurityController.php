@@ -37,20 +37,23 @@ class SecurityController extends Controller
             $email = Str::lower($usr->email);
             $cleanInput = str_replace([' ', '_', '-', '@', '.'], '', $email);
 
-            $keyUser = Str::transliterate("login_lockout:user_{$usr->id}|" . request()->ip());
-            $keyUserLocal = Str::transliterate("login_lockout:user_{$usr->id}|127.0.0.1");
-            $keyInput = Str::transliterate("login_lockout:input_{$cleanInput}|" . request()->ip());
+            $keyUser = Str::transliterate("login_lockout:user_{$usr->id}");
+            $keyInput = Str::transliterate("login_lockout:input_{$cleanInput}");
+            $keyUserIp = Str::transliterate("login_lockout:user_{$usr->id}|" . request()->ip());
+            $keyInputIp = Str::transliterate("login_lockout:input_{$cleanInput}|" . request()->ip());
             $key1 = Str::transliterate($email . '|' . request()->ip());
 
             $attemptsUser = RateLimiter::attempts($keyUser);
-            $attemptsUserLocal = RateLimiter::attempts($keyUserLocal);
             $attemptsInput = RateLimiter::attempts($keyInput);
+            $attemptsUserIp = RateLimiter::attempts($keyUserIp);
+            $attemptsInputIp = RateLimiter::attempts($keyInputIp);
             $attempts1 = RateLimiter::attempts($key1);
 
-            $maxAttempts = max($attemptsUser, $attemptsUserLocal, $attemptsInput, $attempts1);
+            $maxAttempts = max($attemptsUser, $attemptsInput, $attemptsUserIp, $attemptsInputIp, $attempts1);
             $isLocked = RateLimiter::tooManyAttempts($keyUser, 3) 
-                || RateLimiter::tooManyAttempts($keyUserLocal, 3) 
                 || RateLimiter::tooManyAttempts($keyInput, 3) 
+                || RateLimiter::tooManyAttempts($keyUserIp, 3) 
+                || RateLimiter::tooManyAttempts($keyInputIp, 3) 
                 || RateLimiter::tooManyAttempts($key1, 3);
 
             // Also check latest audit log for un-cleared lockout
@@ -152,6 +155,7 @@ class SecurityController extends Controller
 
         // Clear all rate limiter key variations for guaranteed lockout removal
         $keysToClear = [
+            Str::transliterate("login_lockout:input_{$cleanInput}"),
             Str::transliterate("login_lockout:input_{$cleanInput}|" . $clientIp),
             Str::transliterate("login_lockout:input_{$cleanInput}|127.0.0.1"),
             Str::transliterate("login_lockout:input_{$cleanInput}|" . $request->ip()),
@@ -165,6 +169,7 @@ class SecurityController extends Controller
         ];
 
         if ($usr) {
+            $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}");
             $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|" . $clientIp);
             $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|127.0.0.1");
             $keysToClear[] = Str::transliterate("login_lockout:user_{$usr->id}|" . $request->ip());

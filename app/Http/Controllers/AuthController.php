@@ -64,9 +64,9 @@ class AuthController extends Controller
             ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$cleanInput])
             ->first();
 
-        // Standardized Lockout Key: Bind to canonical user ID if account exists, or clean input
+        // Standardized Lockout Key: Bind strictly to canonical account key without IP dependency for cloud serverless stability
         $accountKey = $user ? 'user_' . $user->id : 'input_' . $cleanInput;
-        $throttleKey = Str::transliterate("login_lockout:{$accountKey}|" . $request->ip());
+        $throttleKey = Str::transliterate("login_lockout:{$accountKey}");
         $maxAttempts = 3; // Strict 3 Failed Attempts Lockout Threshold
 
         // 4. Check Rate Limiter Lockout (Max 3 Attempts for all accounts)
@@ -90,8 +90,8 @@ class AuthController extends Controller
             // Clear brute-force rate limiter on successful password verification
             RateLimiter::clear($throttleKey);
             if ($user) {
-                RateLimiter::clear(Str::transliterate("login_lockout:user_{$user->id}|" . $request->ip()));
-                RateLimiter::clear(Str::transliterate("login_lockout:input_{$cleanInput}|" . $request->ip()));
+                RateLimiter::clear(Str::transliterate("login_lockout:user_{$user->id}"));
+                RateLimiter::clear(Str::transliterate("login_lockout:input_{$cleanInput}"));
             }
 
             // Server-side check: Has user successfully verified OTP within the last 50 minutes?
