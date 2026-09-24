@@ -2,7 +2,7 @@
 
 /**
  * Hirna Mobility Solutions - Vercel Serverless Application Entry Point
- * Ensures production data persistence with Supabase PostgreSQL.
+ * Strictly enforces Supabase PostgreSQL Cloud Database for 100% production data persistence.
  */
 
 // 1. Ensure required writable directories exist in /tmp for Vercel serverless environment
@@ -19,43 +19,27 @@ foreach ([
     }
 }
 
-// 2. Load Composer Autoloader & Bootstrap Laravel Environment to read Vercel env vars accurately
+// 2. Load Composer Autoloader & Bootstrap Laravel Environment
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $app = require __DIR__ . '/../bootstrap/app.php';
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-// 3. Inspect Authoritative Database Configuration
-$dbConn = env('DB_CONNECTION', config('database.default'));
-$dbHost = env('DB_HOST', config("database.connections.{$dbConn}.host"));
+// 3. Force Persistent Database Cache Driver for Shared RateLimiter State
+config(['cache.default' => 'database']);
 
-$isPersistentDb = ($dbConn && strtolower($dbConn) !== 'sqlite') 
-    || (!empty($dbHost) && strtolower($dbHost) !== '127.0.0.1' && strtolower($dbHost) !== 'localhost');
-
-if ($isPersistentDb) {
-    // Cloud Database (Supabase PostgreSQL / MySQL) is configured - DO NOT FALL BACK TO SQLITE
-    config(['cache.default' => 'database']);
+// 4. Safe Non-Destructive Schema Migration Bootstrapping on Supabase PostgreSQL
+try {
+    // Non-destructive schema migration (never drops existing tables or user records)
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
     
-    try {
-        // Non-destructive schema migration (never drops existing tables or user records)
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
-        // Initial seed ONLY executed if database has 0 user records
-        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        }
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::error("CLOUD DB BOOTSTRAP EXCEPTION: " . $e->getMessage());
+    // Seed initial roles ONLY if database has 0 user records
+    if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
     }
-} else {
-    // Fallback local SQLite setup ONLY if no cloud database is configured
-    $dbFile = '/tmp/database.sqlite';
-    if (!file_exists($dbFile)) {
-        @touch($dbFile);
-    }
-    config(['database.default' => 'sqlite']);
-    config(['database.connections.sqlite.database' => $dbFile]);
+} catch (\Throwable $e) {
+    \Illuminate\Support\Facades\Log::error("SUPABASE DB BOOTSTRAP EXCEPTION: " . $e->getMessage());
 }
 
 // 5. Forward Serverless Request to public/index.php
