@@ -94,14 +94,26 @@ class SecurityController extends Controller
     public function storeUser(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name' => 'required|string|min:2|max:255',
+            'email' => [
+                'required',
+                'string',
+                'min:3',
+                'max:30',
+                'regex:/^[a-zA-Z0-9_.\-@]+$/',
+                'unique:users,email',
+            ],
             'job_title' => 'nullable|string|max:100',
-            'phone_number' => 'nullable|string|max:30',
+            'phone_number' => [
+                'required',
+                'string',
+                'regex:/^09\d{9}$/',
+            ],
             'password' => [
                 'required',
                 'string',
                 'min:8',
+                'max:100',
                 'regex:/[A-Z]/',
                 'regex:/[a-z]/',
                 'regex:/[0-9]/',
@@ -109,16 +121,28 @@ class SecurityController extends Controller
             ],
             'role' => 'required|string|in:admin,fleet_manager,dispatcher,finance,operations,driver',
         ], [
-            'email.unique' => 'This email address is already registered.',
+            'name.required' => 'Full Name is required.',
+            'name.min' => 'Full Name must be at least 2 characters long.',
+            'email.required' => 'Username / Email Address is required.',
+            'email.min' => 'Username / Email Address must be at least 3 characters long.',
+            'email.max' => 'Username / Email Address must not exceed 30 characters.',
+            'email.regex' => 'Username / Email Address can only contain letters, numbers, underscores (_), periods (.), hyphens (-), and @ without spaces or invalid characters.',
+            'email.unique' => 'This email address or username is already registered.',
+            'phone_number.required' => 'Phone Number is required.',
+            'phone_number.regex' => 'Phone Number must be numbers only, exactly 11 digits in Philippine mobile format starting with 09 (e.g. 09171234567).',
+            'password.required' => 'Initial Password is required.',
             'password.min' => 'Password must be at least 8 characters long.',
+            'password.max' => 'Password must not exceed 100 characters.',
             'password.regex' => 'Password fails complexity rules: Must include 1 Uppercase (A-Z), 1 Lowercase (a-z), 1 Number (0-9), and 1 Special Character.',
+            'role.required' => 'Please select a System Role & Permissions.',
+            'role.in' => 'Selected system role is invalid.',
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
+            'name' => trim($validated['name']),
             'email' => trim(Str::lower($validated['email'])),
-            'job_title' => $validated['job_title'] ?? null,
-            'phone_number' => $validated['phone_number'] ?? null,
+            'job_title' => $validated['job_title'] ? trim($validated['job_title']) : null,
+            'phone_number' => trim($validated['phone_number']),
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
         ]);
