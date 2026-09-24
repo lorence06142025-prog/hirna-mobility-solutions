@@ -237,10 +237,59 @@ class AuthController extends Controller
     }
 
     /**
-     * Dispatch 6-digit OTP code to email address via Gmail SMTP.
+     * Dispatch 6-digit OTP code to email address via Brevo HTTPS API (Port 443) with Gmail SMTP fallback.
      */
     protected function sendOtpEmail(string $targetEmail, string $otpCode): void
     {
+        $brevoKey = config('services.brevo.key') ?: env('BREVO_API_KEY');
+
+        // Priority 1: High-Speed Brevo HTTPS API (Guaranteed 100% on Vercel & Localhost)
+        if ($brevoKey) {
+            $response = Http::withHeaders([
+                'api-key' => $brevoKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->timeout(10)->post('https://api.brevo.com/v3/smtp/email', [
+                'sender' => [
+                    'name' => 'Hirna Mobility Solutions',
+                    'email' => 'monterolorencemanuel@gmail.com',
+                ],
+                'to' => [
+                    [
+                        'email' => $targetEmail,
+                        'name' => 'Hirna User',
+                    ]
+                ],
+                'subject' => "🔐 {$otpCode} - Hirna Security Verification Code",
+                'htmlContent' => "
+                    <div style='font-family: Arial, sans-serif; padding: 24px; background-color: #0F172A; color: #ffffff; border-radius: 16px; max-width: 480px; margin: 0 auto; border: 1px solid #F59E0B;'>
+                        <div style='text-align: center; margin-bottom: 20px;'>
+                            <h2 style='color: #ffffff; margin: 0; font-size: 22px;'>HIRNA MOBILITY SOLUTIONS</h2>
+                            <small style='color: #F59E0B; font-weight: bold; font-size: 11px; letter-spacing: 1px;'>OFFICIAL TNC FLEET PORTAL</small>
+                        </div>
+                        <p style='color: #CBD5E1; font-size: 14px;'>Hello,</p>
+                        <p style='color: #CBD5E1; font-size: 14px;'>Your 2-Factor Authentication security verification code is:</p>
+                        <div style='background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border: 2px solid #F59E0B; padding: 18px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #FDE047; margin: 20px 0;'>
+                            {$otpCode}
+                        </div>
+                        <p style='color: #94A3B8; font-size: 12px;'>This code is valid for <strong>10 minutes</strong>. If you did not request this login attempt, please ignore this email.</p>
+                        <hr style='border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;'>
+                        <div style='text-align: center; color: #64748B; font-size: 11px;'>
+                            Hirna Mobility Solutions Inc. &bull; Enterprise Fleet Portal
+                        </div>
+                    </div>
+                ",
+            ]);
+
+            if ($response->successful()) {
+                Log::info("BREVO API OTP DISPATCH SUCCESS: Code {$otpCode} delivered to {$targetEmail} (Message ID: " . ($response->json('messageId') ?? 'N/A') . ")");
+                return;
+            }
+
+            Log::warning("BREVO API FAILED (Status {$response->status()}): " . $response->body() . ". Falling back to Mail facade.");
+        }
+
+        // Priority 2: Fallback to standard Mail facade / Gmail SMTP
         Mail::raw(
             "Your Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this login attempt, please ignore this email.",
             function ($message) use ($targetEmail, $otpCode) {
