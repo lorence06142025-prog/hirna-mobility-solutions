@@ -27,36 +27,35 @@ $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 // 3. Inspect Authoritative Database Configuration
-$dbConn = config('database.default') ?: env('DB_CONNECTION');
-$dbHost = config("database.connections.{$dbConn}.host") ?: env('DB_HOST');
+$dbConn = env('DB_CONNECTION', config('database.default'));
+$dbHost = env('DB_HOST', config("database.connections.{$dbConn}.host"));
 
 $isPersistentDb = ($dbConn && strtolower($dbConn) !== 'sqlite') 
     || (!empty($dbHost) && strtolower($dbHost) !== '127.0.0.1' && strtolower($dbHost) !== 'localhost');
 
-if (!$isPersistentDb) {
-    // Fallback local SQLite setup ONLY if no cloud database (Supabase) is configured
+if ($isPersistentDb) {
+    // Cloud Database (Supabase PostgreSQL / MySQL) is configured - DO NOT FALL BACK TO SQLITE
+    config(['cache.default' => 'database']);
+    
+    try {
+        // Non-destructive schema migration (never drops existing tables or user records)
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        
+        // Initial seed ONLY executed if database has 0 user records
+        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        }
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error("CLOUD DB BOOTSTRAP EXCEPTION: " . $e->getMessage());
+    }
+} else {
+    // Fallback local SQLite setup ONLY if no cloud database is configured
     $dbFile = '/tmp/database.sqlite';
     if (!file_exists($dbFile)) {
         @touch($dbFile);
     }
     config(['database.default' => 'sqlite']);
     config(['database.connections.sqlite.database' => $dbFile]);
-} else {
-    // Force database cache store so RateLimiter state is shared across serverless workers in Supabase
-    config(['cache.default' => 'database']);
-}
-
-// 4. Safe Non-Destructive Migration Bootstrapping
-try {
-    // Non-destructive schema migration (never drops existing tables or user records)
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    
-    // Initial seed ONLY executed if database has 0 user records
-    if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-    }
-} catch (\Throwable $e) {
-    // Silently continue if database schema is already up to date
 }
 
 // 5. Forward Serverless Request to public/index.php
