@@ -93,20 +93,26 @@ class AuthController extends Controller
             ]);
 
             // Dispatch OTP Email
+            $mailError = null;
             try {
                 Mail::raw(
                     "Your Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.",
-                    function ($message) use ($targetEmail) {
+                    function ($message) use ($targetEmail, $otpCode) {
                         $message->to($targetEmail)
                                 ->subject("🔐 {$otpCode} - Hirna Security Verification Code");
                     }
                 );
                 Log::info("OTP DISPATCH SUCCESS: Code {$otpCode} dispatched to {$targetEmail}");
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                $mailError = $e->getMessage();
                 Log::error("OTP DISPATCH FAILED: " . $e->getMessage());
             }
 
-            return redirect()->route('otp.show')->with('success', "A 6-digit verification code has been sent to {$targetEmail}.");
+            if ($mailError) {
+                return redirect()->route('otp.show')->with('error', "Verification code generated, but mail dispatch failed: {$mailError}");
+            }
+
+            return redirect()->route('otp.show')->with('success', "A 6-digit verification code has been sent to {$targetEmail}. Check your inbox!");
         }
 
         // 5. Failed Login Attempt: Record Strike in RateLimiter
@@ -230,14 +236,14 @@ class AuthController extends Controller
         try {
             Mail::raw(
                 "Your new Hirna Mobility Solutions Security Verification Code is: {$otpCode}\n\nThis code will expire in 10 minutes.",
-                function ($message) use ($targetEmail) {
+                function ($message) use ($targetEmail, $otpCode) {
                     $message->to($targetEmail)
                             ->subject("🔐 {$otpCode} - New Hirna Security Verification Code");
                 }
             );
             Log::info("OTP RESENT: Code {$otpCode} sent to {$targetEmail}");
             return back()->with('success', "A new 6-digit verification code has been sent to {$targetEmail}.");
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("OTP RESEND MAIL FAILED: " . $e->getMessage());
             return back()->with('error', "Failed to dispatch email: " . $e->getMessage());
         }
