@@ -301,29 +301,54 @@
             </div>
         </div>
 
+        @php
+            $userRole = session('user_role', 'admin');
+            
+            // Server-validated Role Module Access Permissions
+            $canAccessFleet = in_array($userRole, ['admin', 'fleet_manager']);
+            $canAccessReservations = in_array($userRole, ['admin', 'fleet_manager', 'dispatcher', 'operations']);
+            $canAccessTrips = in_array($userRole, ['admin', 'fleet_manager', 'dispatcher', 'finance', 'operations', 'driver']);
+            $canAccessFuel = in_array($userRole, ['admin', 'fleet_manager', 'finance']);
+            $canAccessCostAnalysis = in_array($userRole, ['admin', 'finance', 'operations']);
+            $canAccessRoutes = in_array($userRole, ['admin', 'fleet_manager', 'dispatcher', 'operations']);
+            $canAccessSecurity = ($userRole === 'admin');
+        @endphp
+
         <nav class="mt-3">
             <a href="{{ route('dashboard') }}" class="sidebar-nav-link {{ Route::is('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-grid-1x2-fill"></i> Dashboard
             </a>
+            @if($canAccessFleet)
             <a href="{{ route('vehicles.index') }}" class="sidebar-nav-link {{ Route::is('vehicles.*') || Route::is('maintenance.*') ? 'active' : '' }}">
                 <i class="bi bi-truck"></i> Fleet and Vehicle Management
             </a>
+            @endif
+            @if($canAccessReservations)
             <a href="{{ route('reservations.index') }}" class="sidebar-nav-link {{ Route::is('reservations.*') ? 'active' : '' }}">
                 <i class="bi bi-calendar-event"></i> Vehicle Reservation and Dispatch
             </a>
+            @endif
+            @if($canAccessTrips)
             <a href="{{ route('trips.index') }}" class="sidebar-nav-link {{ Route::is('trips.*') ? 'active' : '' }}">
                 <i class="bi bi-geo-alt"></i> Driver and Trip Performance Monitoring
             </a>
+            @endif
+            @if($canAccessFuel)
             <a href="{{ route('fuel.index') }}" class="sidebar-nav-link {{ Route::is('fuel.*') ? 'active' : '' }}">
                 <i class="bi bi-fuel-pump"></i> Fuel Management System
             </a>
+            @endif
+            @if($canAccessCostAnalysis)
             <a href="{{ route('cost-analysis.index') }}" class="sidebar-nav-link {{ Route::is('cost-analysis.*') ? 'active' : '' }}">
                 <i class="bi bi-graph-up-arrow"></i> Transport Cost Analysis
             </a>
+            @endif
+            @if($canAccessRoutes)
             <a href="{{ route('routes.index') }}" class="sidebar-nav-link {{ Route::is('routes.*') ? 'active' : '' }}">
                 <i class="bi bi-compass"></i> Route Planning and Optimization
             </a>
-            @if(session('user_role', 'admin') === 'admin')
+            @endif
+            @if($canAccessSecurity)
             <a href="{{ route('admin.security.index') }}" class="sidebar-nav-link {{ Route::is('admin.security.*') ? 'active' : '' }}">
                 <i class="bi bi-shield-lock-fill"></i> Security & Access Center
             </a>
@@ -348,25 +373,37 @@
                 <a href="{{ route('dashboard') }}" class="sidebar-nav-link {{ Route::is('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-grid-1x2-fill"></i> Dashboard
                 </a>
+                @if($canAccessFleet)
                 <a href="{{ route('vehicles.index') }}" class="sidebar-nav-link {{ Route::is('vehicles.*') || Route::is('maintenance.*') ? 'active' : '' }}">
                     <i class="bi bi-truck"></i> Fleet and Vehicle Management
                 </a>
+                @endif
+                @if($canAccessReservations)
                 <a href="{{ route('reservations.index') }}" class="sidebar-nav-link {{ Route::is('reservations.*') ? 'active' : '' }}">
                     <i class="bi bi-calendar-event"></i> Vehicle Reservation and Dispatch
                 </a>
+                @endif
+                @if($canAccessTrips)
                 <a href="{{ route('trips.index') }}" class="sidebar-nav-link {{ Route::is('trips.*') ? 'active' : '' }}">
                     <i class="bi bi-geo-alt"></i> Driver and Trip Performance Monitoring
                 </a>
+                @endif
+                @if($canAccessFuel)
                 <a href="{{ route('fuel.index') }}" class="sidebar-nav-link {{ Route::is('fuel.*') ? 'active' : '' }}">
                     <i class="bi bi-fuel-pump"></i> Fuel Management System
                 </a>
+                @endif
+                @if($canAccessCostAnalysis)
                 <a href="{{ route('cost-analysis.index') }}" class="sidebar-nav-link {{ Route::is('cost-analysis.*') ? 'active' : '' }}">
                     <i class="bi bi-graph-up-arrow"></i> Transport Cost Analysis
                 </a>
+                @endif
+                @if($canAccessRoutes)
                 <a href="{{ route('routes.index') }}" class="sidebar-nav-link {{ Route::is('routes.*') ? 'active' : '' }}">
                     <i class="bi bi-compass"></i> Route Planning and Optimization
                 </a>
-                @if(session('user_role', 'admin') === 'admin')
+                @endif
+                @if($canAccessSecurity)
                 <a href="{{ route('admin.security.index') }}" class="sidebar-nav-link {{ Route::is('admin.security.*') ? 'active' : '' }}">
                     <i class="bi bi-shield-lock-fill"></i> Security & Access Center
                 </a>

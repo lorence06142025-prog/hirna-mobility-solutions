@@ -108,9 +108,11 @@
                     <h5 class="fw-bold mb-1"><i class="bi bi-shield-shaded text-danger me-2"></i> Hirna Mobility Fleet Inventory</h5>
                     <p class="text-muted small mb-0">Active vehicle lineup deployed across Hirna regional transport hubs.</p>
                 </div>
+                @if(in_array(session('user_role', 'admin'), ['admin', 'fleet_manager']))
                 <a href="{{ route('vehicles.index') }}" class="btn btn-sm btn-outline-primary rounded-3 px-3 fw-medium">
                     Manage Fleet Inventory <i class="bi bi-arrow-right ms-1"></i>
                 </a>
+                @endif
             </div>
 
             <div class="table-responsive">

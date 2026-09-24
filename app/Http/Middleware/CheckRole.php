@@ -51,12 +51,20 @@ class CheckRole
             return $next($request);
         }
 
-        // Reject unauthorized roles with strict 403 Forbidden response
+        $roleTitle = ucwords(str_replace('_', ' ', $userRole));
+        $deniedMessage = "🚨 Access Denied: Your assigned account role ({$roleTitle}) is not authorized to access that module.";
+
+        // Reject unauthorized roles with strict 403 Forbidden response for API/AJAX
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json(['error' => 'Unauthorized role access.'], 403);
+            return response()->json(['error' => $deniedMessage], 403);
         }
 
-        abort(403, 'Unauthorized access for your assigned account role.');
+        // For web requests, redirect to authorized dashboard with explicit alert
+        if ($request->routeIs('dashboard')) {
+            abort(403, $deniedMessage);
+        }
+
+        return redirect()->route('dashboard')->with('error', $deniedMessage);
     }
 }
 
